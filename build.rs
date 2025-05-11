@@ -107,6 +107,44 @@ fn write_documentation() {
 
 // this function is responsible for parsing the src/system/ folder and finding every special comment in the source code to then output it to the GitHub documentation and the Lua LSP definition file.
 fn main() {
+    // don't use until a new raylib version is made available to raylib-rs.
+    /*
+    use cmake::Config;
+
+    let dst = Config::new("source/rust/base/external/r3d-master")
+        .define("R3D_RAYLIB_VENDORED", "1")
+        .build_target(".")
+        .build();
+
+    println!("cargo:rustc-link-search=native={}/build", dst.display());
+    println!("cargo:rustc-link-lib=static=r3d");
+    */
+
+    cc::Build::new()
+        .file("source/rust/base/external/helper.c")
+        .compile("helper");
+
+    // The bindgen::Builder is the main entry point
+    // to bindgen, and lets you build up options for
+    // the resulting bindings.
+    let bindings = bindgen::Builder::default()
+        // The input header we would like to generate
+        // bindings for.
+        .header("source/rust/base/external/helper.h")
+        // Tell cargo to invalidate the built crate whenever any of the
+        // included header files changed.
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        // Finish the builder and generate the bindings.
+        .generate()
+        // Unwrap the Result and panic on failure.
+        .expect("Unable to generate bindings");
+
+    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("helper.rs"))
+        .expect("Couldn't write bindings!");
+
     #[cfg(feature = "documentation")]
     {
         write_documentation();

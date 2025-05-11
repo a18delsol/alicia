@@ -164,7 +164,15 @@ impl Script {
 
         unsafe {
             // this is causing lua to be unable to load main.lua initially...?
+            println!(
+                "----> pre: {}",
+                Self::c_to_rust_string(raylib::ffi::GetWorkingDirectory())?
+            );
             raylib::ffi::ChangeDirectory(Script::rust_to_c_string(&status_info.path)?.as_ptr());
+            println!(
+                "----> post: {}",
+                Self::c_to_rust_string(raylib::ffi::GetWorkingDirectory())?
+            );
         }
 
         let alicia = Self::set_environment(&lua, status_info)?;
@@ -492,6 +500,10 @@ impl ScriptData {
     pub fn get_path(lua: &Lua, path: &str) -> mlua::Result<String> {
         let script_data = lua.app_data_ref::<ScriptData>().unwrap();
 
+        // there's something wrong with this function and returning an incorrect path on start-up
+        // goes into the else condition even if it really shouldn't.
+        return Ok(path.to_string());
+
         if script_data.status_info.safe {
             //let path = format!("{}/{path}", script_data.status_info.path);
 
@@ -499,10 +511,13 @@ impl ScriptData {
             let path = path.replace("../", "");
             let path = path.replace("..",  "");
 
+
             Ok(path)
         } else if script_data.path_escape {
+            
             Ok(path.to_string())
         } else {
+            
             Ok(format!("{}/{path}", script_data.status_info.path))
         }
     }

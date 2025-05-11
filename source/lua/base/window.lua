@@ -50,7 +50,7 @@
 
 require "bit"
 
-local WINDOW_FONT_SCALE         = 48.0
+local WINDOW_FONT_SCALE         = 24.0
 local WINDOW_FONT_SPACE         = 2.0
 local WINDOW_COLOR_PRIMARY_MAIN = color:new(156, 39, 176, 255)
 local WINDOW_COLOR_PRIMARY_SIDE = color:new(123, 31, 162, 255)
@@ -829,14 +829,61 @@ function window:entry(shape, label, value, flag)
         -- TO-DO change device to keyboard on focus gain.
         local _, which = WINDOW_ACTION_ENTRY:press_repeat()
 
+        if alicia.input.board.get_down(INPUT_BOARD.L_CONTROL) then
+            if alicia.input.board.get_press(INPUT_BOARD.V) then
+                local value_a = string.sub(value, 0, gizmo.entry_cursor)
+                local value_b = string.sub(value, gizmo.entry_cursor + 1)
+                local text = alicia.input.get_clipboard_text()
+
+                gizmo.entry_cursor = gizmo.entry_cursor + #text
+                value = value_a .. text .. value_b
+            end
+        end
+
         if which then
             if which.button == INPUT_BOARD.LEFT then
                 if gizmo.entry_cursor > 0 then
-                    gizmo.entry_cursor = gizmo.entry_cursor - 1
+                    local stop = false
+
+                    if alicia.input.board.get_down(INPUT_BOARD.L_CONTROL) then
+                        while gizmo.entry_cursor > 0 do
+                            gizmo.entry_cursor = gizmo.entry_cursor - 1
+
+                            local check = string.sub(value, gizmo.entry_cursor, gizmo.entry_cursor)
+
+                            if check == "." or check == "(" or check == ")" or check == " " then
+                                stop = true
+                            else
+                                if stop then
+                                    break
+                                end
+                            end
+                        end
+                    else
+                        gizmo.entry_cursor = gizmo.entry_cursor - 1
+                    end
                 end
             elseif which.button == INPUT_BOARD.RIGHT then
                 if gizmo.entry_cursor < #value then
-                    gizmo.entry_cursor = gizmo.entry_cursor + 1
+                    local stop = false
+
+                    if alicia.input.board.get_down(INPUT_BOARD.L_CONTROL) then
+                        while gizmo.entry_cursor < #value do
+                            gizmo.entry_cursor = gizmo.entry_cursor + 1
+
+                            local check = string.sub(value, gizmo.entry_cursor + 1, gizmo.entry_cursor + 1)
+
+                            if check == "." or check == "(" or check == ")" or check == " " then
+                                stop = true
+                            else
+                                if stop then
+                                    break
+                                end
+                            end
+                        end
+                    else
+                        gizmo.entry_cursor = gizmo.entry_cursor + 1
+                    end
                 end
             end
         else

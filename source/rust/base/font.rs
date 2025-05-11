@@ -56,6 +56,8 @@ use crate::status::*;
 use mlua::prelude::*;
 use raylib::prelude::*;
 
+use super::helper;
+
 //================================================================
 
 /* class
@@ -147,6 +149,50 @@ impl mlua::UserData for Font {
             },
         );
 
+        method.add_method(
+            "draw_box",
+            |lua: &Lua,
+             this,
+             (text, shape, scale, space, wrap, color): (
+                String,
+                LuaValue,
+                f32,
+                f32,
+                bool,
+                LuaValue,
+            )| {
+                let shape: Rectangle = lua.from_value(shape)?;
+                let color: Color = lua.from_value(color)?;
+                let text = Script::rust_to_c_string(&text)?;
+
+                unsafe {
+                    let font: helper::Font = std::mem::transmute(*this.0);
+
+                    let result = helper::DrawTextBoxed(
+                        font,
+                        text.as_ptr(),
+                        helper::Rectangle {
+                            x: shape.x,
+                            y: shape.y,
+                            width: shape.width,
+                            height: shape.height,
+                        },
+                        scale,
+                        space,
+                        wrap,
+                        helper::Color {
+                            r: color.r,
+                            g: color.g,
+                            b: color.b,
+                            a: color.a,
+                        },
+                    );
+
+                    Ok(result)
+                }
+            },
+        );
+
         /* entry
         {
             "version": "1.0.0",
@@ -171,6 +217,36 @@ impl mlua::UserData for Font {
                 unsafe {
                     let result = ffi::MeasureTextEx(*this.0, text.as_ptr(), scale, space);
                     Ok((result.x, result.y))
+                }
+            },
+        );
+
+        method.add_method(
+            "measure_text_box",
+            |lua: &Lua,
+             this,
+             (text, shape, scale, space, wrap): (String, LuaValue, f32, f32, bool)| {
+                let shape: Rectangle = lua.from_value(shape)?;
+                let text = Script::rust_to_c_string(&text)?;
+
+                unsafe {
+                    let font: helper::Font = std::mem::transmute(*this.0);
+
+                    let result = helper::MeasureTextBoxed(
+                        font,
+                        text.as_ptr(),
+                        helper::Rectangle {
+                            x: shape.x,
+                            y: shape.y,
+                            width: shape.width,
+                            height: shape.height,
+                        },
+                        scale,
+                        space,
+                        wrap,
+                    );
+
+                    Ok(result)
                 }
             },
         );

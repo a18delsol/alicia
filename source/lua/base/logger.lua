@@ -54,6 +54,16 @@ local LOGGER_LINE_COLOR_FAILURE = color:new(255.0, 0.0, 0.0, 255.0)
 local LOGGER_LINE_COUNT         = 4.0
 local LOGGER_LINE_DELAY         = 4.0
 local LOGGER_LINE_LABEL_TIME    = true
+local LOGGER_ACTION_ABOVE       = action:new(
+    {
+        action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.UP),
+    }
+)
+local LOGGER_ACTION_BELOW       = action:new(
+    {
+        action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.DOWN),
+    }
+)
 
 ---@class logger_line
 logger_line                     = {
@@ -82,7 +92,7 @@ local LOGGER_FONT_SPACE = 2.0
 local LOGGER_LINE_CAP   = 4.0
 
 ---@class logger
----@field buffer  table
+---@field current  table
 ---@field active  boolean
 ---@field window  window
 logger                  = {
@@ -101,7 +111,8 @@ function logger:new()
     i.__type        = "logger"
     i.font          = alicia.font.new_default(LOGGER_FONT_SCALE)
     i.work          = ""
-    i.buffer        = {}
+    i.current       = {}
+    i.history       = {}
     i.active        = false
     i.window        = window:new()
 
@@ -125,13 +136,50 @@ function logger:draw()
     end
 
     if self.active then
+        local shift = nil
         local click = false
+
+        if LOGGER_ACTION_ABOVE:press_repeat() then shift = 1 * -1 end
+        if LOGGER_ACTION_BELOW:press_repeat() then shift = 1 end
+
+        if shift then
+            if #self.history > 0 then
+                local match = false
+
+                for i, entry in ipairs(self.history) do
+                    if entry == self.work then
+                        if shift == -1 then
+                            if self.history[i - 1] then
+                                self.work = self.history[i - 1]
+                            else
+                                self.work = self.history[#self.history]
+                            end
+                        else
+                            if self.history[i + 1] then
+                                self.work = self.history[i + 1]
+                            else
+                                self.work = self.history[1]
+                            end
+                        end
+
+                        match = true
+                        break
+                    end
+                end
+
+                if not match then
+                    self.work = self.history[#self.history]
+                end
+            end
+        end
 
         alicia.draw_2d.draw_box_2(box_2:old(0.0, 0.0, shape.x, shape.y), vector_2:zero(), 0.0,
             color:old(0.0, 0.0, 0.0, 127.0))
 
         self.window:begin()
-        self.work, click = self.window:entry(box_2:old(8.0, shape.y - 56.0, shape.x - 16.0, 48.0), "", self.work)
+        self.work, click = self.window:entry(
+            box_2:old(8.0, shape.y - (LOGGER_FONT_SCALE + 8.0), shape.x - 16.0, LOGGER_FONT_SCALE), "",
+            self.work)
         self.window:close()
 
         if click then
@@ -141,49 +189,72 @@ function logger:draw()
                 local call, error = loadstring(self.work)
 
                 if call then
-                    call()
+                    local success, message = pcall(call)
+
+                    if not success then
+                        self:print(message, color:new(255.0, 0.0, 0.0, 255.0))
+                    end
                 else
                     self:print(error, color:new(255.0, 0.0, 0.0, 255.0))
                 end
 
+                table.insert(self.history, self.work)
                 self.work = ""
             end
         end
     end
 
-    -- get the length of the buffer worker.
-    local count = #self.buffer
+    -- get the length of the current worker.
+    local count = #self.current
     local text_point_a = vector_2:old(0.0, 0.0)
     local text_point_b = vector_2:old(0.0, 0.0)
 
-    -- draw the latest logger buffer, iterating through the buffer in reverse.
+    local offset = 0.0
+
+    -- draw the latest logger current, iterating through the current in reverse.
     for i = 1, (self.active and count or LOGGER_LINE_CAP) do
-        local line = self.buffer[count + 1 - i]
+        local line = self.current[count + 1 - i]
 
         -- line isn't nil...
         if line then
             -- line is within the time threshold...
             if alicia.general.get_time() < line.time + LOGGER_LINE_DELAY or self.active then
-                -- start from 0.
-                i = i - 1
+                local label = line.label
+
+                local result = self.font:measure_text_box(label,
+                    box_2:new(0.0, 0.0, shape.x - 24.0, shape.y), LOGGER_FONT_SCALE,
+                    LOGGER_FONT_SPACE,
+                    true)
+
+                if self.active then offset = offset + result end
 
                 text_point_a:set(13.0,
-                    (self.active and shape.y - 73.0 or 13.0) + (i * LOGGER_FONT_SCALE) * (self.active and -1.0 or 1.0))
+                    (self.active and shape.y - (LOGGER_FONT_SCALE * 2.0 + 1.0) or 13.0) +
+                    (offset) * (self.active and -1.0 or 1.0))
                 text_point_b:set(12.0,
-                    (self.active and shape.y - 72.0 or 12.0) + (i * LOGGER_FONT_SCALE) * (self.active and -1.0 or 1.0))
-                local label = line.label
+                    (self.active and shape.y - (LOGGER_FONT_SCALE * 2.0 + 0.0) or 12.0) +
+                    (offset) * (self.active and -1.0 or 1.0))
+
+                if not self.active then offset = offset + result end
 
                 -- line with time-stamp is set, add time-stamp to beginning.
                 if LOGGER_LINE_LABEL_TIME then
                     label = string.format("(%.2f) %s", line.time, line.label)
                 end
 
-                -- draw back-drop.
-                self.font:draw(label, text_point_a, vector_2:zero(), 0.0, LOGGER_FONT_SCALE, LOGGER_FONT_SPACE,
-                    line.color * 0.5)
-                -- draw line.
-                self.font:draw(label, text_point_b, vector_2:zero(), 0.0, LOGGER_FONT_SCALE, LOGGER_FONT_SPACE,
-                    line.color)
+                self.font:draw_box(label,
+                    box_2:new(text_point_a.x, text_point_a.y, shape.x - text_point_a.x, shape.y), LOGGER_FONT_SCALE,
+                    LOGGER_FONT_SPACE,
+                    true, line.color * 0.5)
+
+                self.font:draw_box(label,
+                    box_2:new(text_point_b.x, text_point_b.y, shape.x - text_point_b.x, shape.y), LOGGER_FONT_SCALE,
+                    LOGGER_FONT_SPACE,
+                    true, line.color)
+
+                --alicia.draw_2d.draw_box_2(box_2:old(text_point_a.x, text_point_a.y, shape.x - 24.0, result),
+                --    vector_2:zero(), 0.0,
+                --    color:old(0.0, 255.0, 0.0, 33.0))
             end
         end
     end
@@ -197,15 +268,15 @@ function logger:print(line_label, line_color)
     line_color = line_color and line_color or LOGGER_LINE_COLOR_MESSAGE
 
     -- insert a new logger line.
-    table.insert(self.buffer, logger_line:new(tostring(line_label), line_color))
+    table.insert(self.current, logger_line:new(tostring(line_label), line_color))
 
     -- if logger line count is over the cap...
-    --if #self.buffer > LOGGER_LINE_CAP then
+    --if #self.current > LOGGER_LINE_CAP then
     --    -- pop one logger line.
-    --    table.remove(self.buffer, 1)
+    --    table.remove(self.current, 1)
     --end
 end
 
 function logger:clear()
-    self.buffer = {}
+    self.current = {}
 end
