@@ -55,7 +55,7 @@ use crate::status::*;
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 
 //================================================================
 
@@ -179,6 +179,50 @@ pub fn texture_draw_billboard_pro(
     }
 }
 
+#[rustfmt::skip]
+fn texture_draw_plane(lua: &Lua,
+    (texture, source, point_a, point_b, point_c, point_d, color): (
+        &ffi::Texture,
+        LuaValue,
+        LuaValue,
+        LuaValue,
+        LuaValue,
+        LuaValue,
+        LuaValue,
+    ), ) -> mlua::Result<()> {
+    let source: Rectangle = lua.from_value(source)?;
+    let point_a: Vector3 = lua.from_value(point_a)?;
+    let point_b: Vector3 = lua.from_value(point_b)?;
+    let point_c: Vector3 = lua.from_value(point_c)?;
+    let point_d: Vector3 = lua.from_value(point_d)?;
+    let color: Color = lua.from_value(color)?;
+
+    unsafe {
+        ffi::rlSetTexture(texture.id);
+
+            let tx = source.x;
+            let ty = source.y;
+            let tw = source.width;
+            let th = source.height;
+
+            ffi::rlBegin(ffi::RL_QUADS as i32);
+
+                ffi::rlColor4ub(color.r, color.g, color.b, color.a);
+
+                ffi::rlNormal3f(0.0, 1.0, 0.0);
+                ffi::rlTexCoord2f(tx, ty); ffi::rlVertex3f(point_a.x, point_a.y, point_a.z);
+                ffi::rlTexCoord2f(tx, th); ffi::rlVertex3f(point_b.x, point_b.y, point_b.z);
+                ffi::rlTexCoord2f(tw, th); ffi::rlVertex3f(point_c.x, point_c.y, point_c.z);
+                ffi::rlTexCoord2f(tw, ty); ffi::rlVertex3f(point_d.x, point_d.y, point_d.z);
+
+            ffi::rlEnd();
+
+        ffi::rlSetTexture(0);
+
+        Ok(())
+    }
+}
+
 /* class
 {
     "version": "1.0.0",
@@ -258,6 +302,32 @@ impl mlua::UserData for Texture {
             }
             Ok(())
         });
+
+        /* entry
+        {
+            "version": "1.0.0",
+            "name": "texture:draw_plane",
+            "info": "TO-DO"
+        }
+        */
+        method.add_method(
+            "draw_plane",
+            |lua: &Lua,
+             this,
+             (source, point_a, point_b, point_c, point_d, color): (
+                LuaValue,
+                LuaValue,
+                LuaValue,
+                LuaValue,
+                LuaValue,
+                LuaValue,
+            )| {
+                Ok(texture_draw_plane(
+                    lua,
+                    (&this.0, source, point_a, point_b, point_c, point_d, color),
+                ))
+            },
+        );
 
         /* entry
         {
@@ -489,13 +559,49 @@ impl mlua::UserData for RenderTexture {
             unsafe {
                 ffi::BeginTextureMode(this.0);
 
-                call.call::<()>(())?;
+                let call = call.call::<()>(());
 
                 ffi::EndTextureMode();
+
+                call?;
             }
 
             Ok(())
         });
+
+        /* entry
+        {
+            "version": "1.0.0",
+            "name": "render_texture:draw_plane",
+            "info": "TO-DO"
+        }
+        */
+        method.add_method(
+            "draw_plane",
+            |lua: &Lua,
+             this,
+             (source, point_a, point_b, point_c, point_d, color): (
+                LuaValue,
+                LuaValue,
+                LuaValue,
+                LuaValue,
+                LuaValue,
+                LuaValue,
+            )| {
+                Ok(texture_draw_plane(
+                    lua,
+                    (
+                        &this.0.texture,
+                        source,
+                        point_a,
+                        point_b,
+                        point_c,
+                        point_d,
+                        color,
+                    ),
+                ))
+            },
+        );
 
         /* entry
         {
@@ -572,9 +678,13 @@ impl RenderTexture {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let data = ffi::LoadRenderTexture(shape.x as i32, shape.y as i32);
+            let mut data = ffi::LoadRenderTexture(shape.x as i32, shape.y as i32);
 
             if ffi::IsRenderTextureValid(data) {
+                // TO-DO expose this as method
+                //ffi::GenTextureMipmaps(&mut data.texture);
+                //ffi::SetTextureFilter(data.texture, TextureFilter::TEXTURE_FILTER_TRILINEAR as i32);
+
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(

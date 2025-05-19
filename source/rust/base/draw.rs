@@ -55,7 +55,7 @@ use crate::status::*;
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 
 //================================================================
 
@@ -120,9 +120,12 @@ fn begin(
     unsafe {
         ffi::BeginDrawing();
 
-        call.call::<()>(variadic)?;
+        let call = call.call::<()>(variadic);
 
         ffi::EndDrawing();
+
+        call?;
+
         Ok(())
     }
 }
@@ -147,9 +150,12 @@ fn begin_blend(
     unsafe {
         ffi::BeginBlendMode(mode);
 
-        call.call::<()>(variadic)?;
+        let call = call.call::<()>(variadic);
 
         ffi::EndBlendMode();
+
+        call?;
+
         Ok(())
     }
 }
@@ -180,9 +186,12 @@ fn begin_scissor(
             view.height as i32,
         );
 
-        call.call::<()>(variadic)?;
+        let call = call.call::<()>(variadic);
 
         ffi::EndScissorMode();
+
+        call?;
+
         Ok(())
     }
 }
@@ -244,9 +253,12 @@ mod draw_3d {
         unsafe {
             ffi::BeginMode3D(value.into());
 
-            call.call::<()>(variadic)?;
+            let call = call.call::<()>(variadic);
 
             ffi::EndMode3D();
+
+            call?;
+
             Ok(())
         }
     }
@@ -809,9 +821,12 @@ mod draw_2d {
         unsafe {
             ffi::BeginMode2D(value.into());
 
-            call.call::<()>(variadic)?;
+            let call = call.call::<()>(variadic);
 
             ffi::EndMode2D();
+
+            call?;
+
             Ok(())
         }
     }

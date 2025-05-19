@@ -183,6 +183,17 @@ window     = {
     __meta = {}
 }
 
+local function window_font(self, scale)
+    if self.font[scale] then
+        return self.font[scale]
+    end
+
+    -- TO-DO make an effort to find the closest match instead of loading a new font from scratch.
+    self.font[scale] = alicia.font.new_default(scale)
+
+    return self.font[scale]
+end
+
 ---Draw a glyph.
 ---@param self        window # The window.
 ---@param board_label string # Board label.
@@ -207,7 +218,8 @@ local function window_glyph(self, board_label, mouse_label, pad_label)
     end
 
     -- draw label.
-    self.font:draw(label, point + WINDOW_SHIFT, vector_2:zero(), 0.0, WINDOW_FONT_SCALE, WINDOW_FONT_SPACE,
+    window_font(self, shape.height):draw(label, point + WINDOW_SHIFT, vector_2:zero(), 0.0, WINDOW_FONT_SCALE,
+        WINDOW_FONT_SPACE,
         color:white())
 end
 
@@ -251,14 +263,13 @@ local function window_border(self, shape, hover, index, focus, label, move)
     end
 
     -- draw border.
-    --alicia.draw_2d.draw_box_2_border(shape, focus)
     alicia.draw_2d.draw_box_2_gradient(
         box_2:old(shape.x, shape.y + shape.height - (shape.height * WINDOW_CARD_ROUND_SHAPE * 0.35), shape.width,
             (shape.height * WINDOW_CARD_ROUND_SHAPE * 0.35) * 4.0),
         color:old(0, 0, 0, 99),
         color:old(0, 0, 0, 0),
-        color:old(0, 0, 0, 99),
-        color:old(0, 0, 0, 0))
+        color:old(0, 0, 0, 0),
+        color:old(0, 0, 0, 99))
     alicia.draw_2d.draw_box_2_round(shape, WINDOW_CARD_ROUND_SHAPE, WINDOW_CARD_ROUND_COUNT, color)
 
     -- if label isn't nil...
@@ -267,10 +278,10 @@ local function window_border(self, shape, hover, index, focus, label, move)
         local color_b = gizmo:fade(self, color:old(255.0, 255.0, 255.0, 255.0))
 
         -- draw text, draw with back-drop.
-        self.font:draw(label, shift + vector_2:old(1.0, 1.0), vector_2:zero(), 0.0, shape.height,
+        window_font(self, shape.height):draw(label, shift + vector_2:old(1.0, 1.0), vector_2:zero(), 0.0, shape.height,
             WINDOW_FONT_SPACE,
             color_a)
-        self.font:draw(label, shift, vector_2:zero(), 0.0, shape.height, WINDOW_FONT_SPACE, color_b)
+        window_font(self, shape.height):draw(label, shift, vector_2:zero(), 0.0, shape.height, WINDOW_FONT_SPACE, color_b)
     end
 
     return gizmo
@@ -282,21 +293,17 @@ end
 ---@param flag?  gizmo_flag # OPTIONAL: The flag of the gizmo.
 ---@param input? action     # OPTIONAL: The input of the gizmo. Will override the default focus action for the gizmo.
 local function window_state(self, shape, flag, input)
-    -- get the mouse position.
-    local mouse_x, mouse_y = alicia.input.mouse.get_point()
-    local mouse = vector_2:old(mouse_x, mouse_y)
-
     local check = true
 
     -- if there is a view-port shape set...
     if self.shape then
         -- check if the gizmo is within it.
         check = alicia.collision.get_box_2_box_2(shape, self.shape) and
-            alicia.collision.get_point_box_2(mouse, self.shape)
+            alicia.collision.get_point_box_2(self.mouse, self.shape)
     end
 
     -- mouse interaction check.
-    local hover = self.device == INPUT_DEVICE.MOUSE and alicia.collision.get_point_box_2(mouse, shape) and check
+    local hover = self.device == INPUT_DEVICE.MOUSE and alicia.collision.get_point_box_2(self.mouse, shape) and check
     -- board interaction check.
     local index = self.device ~= INPUT_DEVICE.MOUSE and self.index == self.count
     -- whether or not this gizmo has been set off.
@@ -328,12 +335,13 @@ local function window_state(self, shape, flag, input)
     -- if we have any form of interaction with the gizmo...
     if hover or index then
         -- check if the focus button has been set off.
-        local hover_click = WINDOW_ACTION_FOCUS:press_repeat(self.device)
+        -- TO-DO change to press_repeat ONLY if input device is not mouse.
+        local hover_click = WINDOW_ACTION_FOCUS:press(self.device)
 
         -- if input over-ride isn't nil...
         if input then
             -- over-ride the default focus button with the given one.
-            hover_click, which = input:press_repeat(self.device)
+            hover_click, which = input:press(self.device)
         end
 
         if hover_click then
@@ -352,12 +360,12 @@ local function window_state(self, shape, flag, input)
     -- if we are the focus gizmo...
     if focus then
         -- check if the focus button has been set up.
-        local focus_click = WINDOW_ACTION_FOCUS:release_repeat(self.device)
+        local focus_click = WINDOW_ACTION_FOCUS:release(self.device)
 
         -- if input over-ride isn't nil...
         if input then
             -- over-ride the default focus button with the given one.
-            focus_click, which = input:release_repeat(self.device)
+            focus_click, which = input:release(self.device)
         end
 
         -- focus button was set up, set off click event, release focus gizmo.
@@ -378,6 +386,7 @@ local function window_state(self, shape, flag, input)
     return hover, index, focus, click, which
 end
 
+
 ---Create a new window.
 ---@return window value # The window.
 function window:new()
@@ -393,21 +402,31 @@ function window:new()
     i.point  = 0.0
     i.which  = 0.0
     i.shift  = false
+    i.mouse  = vector_2:new(0.0, 0.0)
     i.device = INPUT_DEVICE.MOUSE
     i.data   = {}
-    i.font   = alicia.font.new_default(WINDOW_FONT_SCALE)
+    i.font   = {
+        [WINDOW_FONT_SCALE] = alicia.font.new_default(WINDOW_FONT_SCALE)
+    }
 
     return i
 end
 
 ---Begin the window.
-function window:begin()
-    self.count = 0.0
-end
-
----Close the window.
 ---@param lock boolean # If true, will lock user input.
-function window:close(lock)
+function window:draw(call, lock, mouse, ...)
+    self.count = 0.0
+
+    if self.device == INPUT_DEVICE.MOUSE then
+        if mouse then
+            self.mouse:copy(mouse)
+        else
+            self.mouse:copy(vector_2:old(alicia.input.mouse.get_point()))
+        end
+    end
+
+    call(...)
+
     local above = WINDOW_ACTION_ABOVE:press(self.device)
     local below = WINDOW_ACTION_BELOW:press(self.device)
 
@@ -480,27 +499,56 @@ local function window_check_draw(self, shape)
     return true
 end
 
+-- TO-DO documentation
+function window:border(shape, round, count, b_color)
+    -- scroll.
+    shape.y = shape.y + self.point
+
+    round   = round or WINDOW_CARD_ROUND_SHAPE
+    count   = count or WINDOW_CARD_ROUND_COUNT
+    b_color = b_color or WINDOW_COLOR_PRIMARY_MAIN
+
+    if window_check_draw(self, shape) then
+        alicia.draw_2d.draw_box_2_gradient(
+            box_2:old(shape.x, shape.y + shape.height - (shape.height * round * 0.35), shape.width,
+                (shape.height * round * 0.35) * 4.0),
+            color:old(0, 0, 0, 99),
+            color:old(0, 0, 0, 0),
+            color:old(0, 0, 0, 99),
+            color:old(0, 0, 0, 0))
+        alicia.draw_2d.draw_box_2_round(shape,
+            round,
+            count,
+            b_color)
+    end
+end
+
 ---Draw a text gizmo.
 ---@param point  box_2  # The point of the gizmo.
 ---@param label  string # The label of the gizmo.
----@param font   string # The font of the gizmo.
+---@param font   font   # The font of the gizmo.
+-- TO-DO origin, angle
 ---@param scale  number # The text scale of the gizmo.
 ---@param space  number # The text space of the gizmo.
 ---@param color  number # The text color of the gizmo.
 ---@return boolean click # True on click, false otherwise.
-function window:text(point, label, font, scale, space, color)
+function window:text(point, label, font, origin, angle, scale, space, color)
     -- scroll.
     point.y = point.y + self.point
 
     if window_check_draw(self, box_2:old(point.x, point.y, 1.0, scale)) then
-        font:draw(label, point, scale, space, color)
+        if font then
+            font:draw(label, point, origin, angle, scale, space, color)
+        else
+            window_font(self, scale):draw(label, point, origin, angle, scale, space, color)
+        end
     end
 end
 
 ---Draw a button gizmo.
----@param shape box_2      # The shape of the gizmo.
----@param label string     # The label of the gizmo.
----@param flag? gizmo_flag # OPTIONAL: The flag of the gizmo.
+---@param shape box_2            # The shape of the gizmo.
+---@param label string | texture # The label of the gizmo.
+---@param flag? gizmo_flag       # OPTIONAL: The flag of the gizmo.
 ---@return boolean click # True on click, false otherwise.
 function window:button(shape, label, flag)
     -- scroll.
@@ -510,8 +558,14 @@ function window:button(shape, label, flag)
     local hover, index, focus, click = window_state(self, shape, flag)
 
     if window_check_draw(self, shape) then
-        -- draw a border.
-        window_border(self, shape, hover, index, focus, label)
+        if type(label) == "string" then
+            -- draw a border.
+            window_border(self, shape, hover, index, focus, label)
+        else
+            -- draw a border.
+            window_border(self, shape, hover, index, focus, "")
+            label:draw_pro(box_2:old(0.0, 0.0, label.shape_x, label.shape_y), shape, vector_2:zero(), 0.0, color:white())
+        end
     end
 
     -- return true on click.
@@ -579,11 +633,8 @@ function window:slider(shape, label, value, min, max, step, flag)
     if self.device == INPUT_DEVICE.MOUSE then
         -- if gizmo is in focus...
         if focus then
-            -- get mouse position (X).
-            local mouse_x = alicia.input.mouse.get_point()
-
             -- calculate value.
-            local result = math.percentage_from_value(shape.x + 6.0, shape.x + 6.0 + shape.width - 12.0, mouse_x)
+            local result = math.percentage_from_value(shape.x + 6.0, shape.x + 6.0 + shape.width - 12.0, self.mouse.x)
             result = math.clamp(0.0, 1.0, result)
             result = math.value_from_percentage(min, max, result)
             result = math.snap(step, result)
@@ -621,10 +672,11 @@ function window:slider(shape, label, value, min, max, step, flag)
         end
 
         -- measure text.
-        local measure = self.font:measure_text(value, shape.height, WINDOW_FONT_SPACE)
+        local measure = window_font(self, shape.height):measure_text(value, shape.height, WINDOW_FONT_SPACE)
 
         -- draw value.
-        self.font:draw(value, vector_2:old(shape.x + (shape.width * 0.5) - (measure * 0.5), shape.y + WINDOW_SHIFT.y),
+        window_font(self, shape.height):draw(value,
+            vector_2:old(shape.x + (shape.width * 0.5) - (measure * 0.5), shape.y + WINDOW_SHIFT.y),
             vector_2:zero(),
             0.0,
             shape.height,
@@ -689,10 +741,10 @@ function window:switch(shape, label, value, pool, flag)
         window_border(self, shape, hover, index, focus, label, vector_2:old(shape.width, 0.0))
 
         -- measure text.
-        local measure = self.font:measure_text(value_label, shape.height, WINDOW_FONT_SPACE)
+        local measure = window_font(self, shape.height):measure_text(value_label, shape.height, WINDOW_FONT_SPACE)
 
         -- draw value.
-        self.font:draw(value_label,
+        window_font(self, shape.height):draw(value_label,
             vector_2:old(shape.x + (shape.width * 0.5) - (measure * 0.5), shape.y + WINDOW_SHIFT.y),
             vector_2:zero(),
             0.0,
@@ -787,10 +839,11 @@ function window:action(shape, label, value, clamp, flag)
         end
 
         -- measure text.
-        local measure = self.font:measure_text(label, shape.height, WINDOW_FONT_SPACE)
+        local measure = window_font(self, shape.height):measure_text(label, shape.height, WINDOW_FONT_SPACE)
 
         -- draw value.
-        self.font:draw(label, vector_2:old(shape.x + (shape.width * 0.5) - (measure * 0.5), shape.y + WINDOW_SHIFT.y),
+        window_font(self, shape.height):draw(label,
+            vector_2:old(shape.x + (shape.width * 0.5) - (measure * 0.5), shape.y + WINDOW_SHIFT.y),
             vector_2:zero(),
             0.0,
             shape.height,
@@ -927,7 +980,8 @@ function window:entry(shape, label, value, flag)
     window_border(self, shape, hover, index, focus, label, vector_2:old(shape.width, 0.0))
 
     if pick then
-        local measure = self.font:measure_text(string.sub(value, 0, gizmo.entry_cursor), shape.height,
+        local measure = window_font(self, shape.height):measure_text(string.sub(value, 0, gizmo.entry_cursor),
+            shape.height,
             WINDOW_FONT_SPACE)
 
         alicia.draw_2d.draw_box_2(box_2:old(shape.x + measure + 4.0, shape.y, 2.0, shape.height), vector_2:zero(),
@@ -935,14 +989,15 @@ function window:entry(shape, label, value, flag)
     end
 
     -- draw value.
-    self.font:draw(value, vector_2:old(shape.x + 4.0, shape.y + WINDOW_SHIFT.y),
+    window_font(self, shape.height):draw(value, vector_2:old(shape.x + 4.0, shape.y + WINDOW_SHIFT.y),
         vector_2:zero(),
         0.0,
         shape.height,
         WINDOW_FONT_SPACE,
         color:white())
 
-    return value, done
+    -- TO-DO tidy up return data for every widget
+    return value, done, focus
 end
 
 ---Draw a scroll gizmo.
@@ -993,10 +1048,9 @@ function window:scroll(shape, call)
 
     self.gizmo = nil
 
-    local mouse = vector_2:old(alicia.input.mouse.get_point())
     local delta = vector_2:old(alicia.input.mouse.get_wheel())
 
-    if alicia.collision.get_point_box_2(mouse, shape) then
+    if alicia.collision.get_point_box_2(self.mouse, shape) then
         gizmo.scroll_value = math.clamp(0.0, 1.0, gizmo.scroll_value - delta.y * 0.05)
     end
 end

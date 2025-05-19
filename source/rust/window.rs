@@ -52,10 +52,11 @@ use crate::{base, script::Script, status::*};
 
 //================================================================
 
-use raylib::prelude::*;
+//use raylib::prelude::*;
 
 //================================================================
 
+/*
 // window structure, responsible for drawing the missing/failure interface.
 pub struct Window {
     data: [gizmo::Data; Self::GIZMO_COUNT],
@@ -523,3 +524,4 @@ pub mod gizmo {
         }
     }
 }
+*/

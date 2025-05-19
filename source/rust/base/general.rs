@@ -56,7 +56,7 @@ use crate::status::*;
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "system_info")]
@@ -71,25 +71,29 @@ use sysinfo::System;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let general = lua.create_table()?;
 
+    /*
+    general.set("r3d_begin",    lua.create_function(self::r3d_begin)?)?;
+    general.set("r3d_close",    lua.create_function(self::r3d_close)?)?;
+    general.set("r3d_begin_3d", lua.create_function(self::r3d_begin_3d)?)?;
+    general.set("r3d_close_3d", lua.create_function(self::r3d_close_3d)?)?;
+    */
+
     general.set("load_base",       lua.create_function(self::load_base)?)?;
     general.set("set_log_level",   lua.create_function(self::set_log_level)?)?;
     general.set("open_link",       lua.create_function(self::open_link)?)?;
-
-    general.set("standard_input",       lua.create_function(self::standard_input)?)?;
-
+    general.set("standard_input",  lua.create_function(self::standard_input)?)?;
     general.set("get_frame_time",  lua.create_function(self::get_frame_time)?)?;
     general.set("get_frame_rate",  lua.create_function(self::get_frame_rate)?)?;
     general.set("set_frame_rate",  lua.create_function(self::set_frame_rate)?)?;
-    
-    general.set("get_time",      lua.create_function(self::get_time)?)?;
-    general.set("get_time_unix", lua.create_function(self::get_time_unix)?)?;
-    general.set("get_argument",  lua.create_function(self::get_argument)?)?;
+    general.set("get_time",        lua.create_function(self::get_time)?)?;
+    general.set("get_time_unix",   lua.create_function(self::get_time_unix)?)?;
+    general.set("get_argument",    lua.create_function(self::get_argument)?)?;
 
     #[cfg(feature = "system_info")]
-    general.set("get_system",      lua.create_function(self::get_system)?)?;
+    general.set("get_system", lua.create_function(self::get_system)?)?;
 
-    general.set("get_memory",      lua.create_function(self::get_memory)?)?;
-    general.set("get_info",        lua.create_function(self::get_info)?)?;
+    general.set("get_memory", lua.create_function(self::get_memory)?)?;
+    general.set("get_info",   lua.create_function(self::get_info)?)?;
 
     table.set("general", general)?;
 
@@ -97,6 +101,52 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 }
 
 //================================================================
+
+/*
+fn r3d_begin(_: &Lua, _: ()) -> mlua::Result<()> {
+    unsafe {
+        r3d::R3D_Init(800, 600, 0);
+        let light = r3d::R3D_CreateLight(0);
+        r3d::R3D_SetLightDirection(
+            light,
+            r3d::Vector3 {
+                x: -1.0,
+                y: -1.0,
+                z: -1.0,
+            },
+        );
+        r3d::R3D_SetLightActive(light, true);
+
+        Ok(())
+    }
+}
+
+fn r3d_close(_: &Lua, _: ()) -> mlua::Result<()> {
+    unsafe {
+        r3d::R3D_Close();
+        Ok(())
+    }
+}
+
+fn r3d_begin_3d(lua: &Lua, camera: LuaValue) -> mlua::Result<()> {
+    unsafe {
+        let camera: Camera3D = lua.from_value(camera)?;
+        let camera: ffi::Camera3D = camera.into();
+
+        r3d::R3D_Begin(std::mem::transmute(camera));
+
+        Ok(())
+    }
+}
+
+fn r3d_close_3d(_: &Lua, _: ()) -> mlua::Result<()> {
+    unsafe {
+        r3d::R3D_End();
+
+        Ok(())
+    }
+}
+*/
 
 /* entry
 {

@@ -176,11 +176,11 @@ function logger:draw()
         alicia.draw_2d.draw_box_2(box_2:old(0.0, 0.0, shape.x, shape.y), vector_2:zero(), 0.0,
             color:old(0.0, 0.0, 0.0, 127.0))
 
-        self.window:begin()
-        self.work, click = self.window:entry(
-            box_2:old(8.0, shape.y - (LOGGER_FONT_SCALE + 8.0), shape.x - 16.0, LOGGER_FONT_SCALE), "",
-            self.work)
-        self.window:close()
+        self.window:draw(function()
+            self.work, click = self.window:entry(
+                box_2:old(8.0, shape.y - (LOGGER_FONT_SCALE + 8.0), shape.x - 16.0, LOGGER_FONT_SCALE), "",
+                self.work)
+        end)
 
         if click then
             if not (self.work == "") then
@@ -205,11 +205,10 @@ function logger:draw()
     end
 
     -- get the length of the current worker.
-    local count = #self.current
+    local count        = #self.current
     local text_point_a = vector_2:old(0.0, 0.0)
     local text_point_b = vector_2:old(0.0, 0.0)
-
-    local offset = 0.0
+    local offset       = 0.0
 
     -- draw the latest logger current, iterating through the current in reverse.
     for i = 1, (self.active and count or LOGGER_LINE_CAP) do
@@ -271,10 +270,10 @@ function logger:print(line_label, line_color)
     table.insert(self.current, logger_line:new(tostring(line_label), line_color))
 
     -- if logger line count is over the cap...
-    --if #self.current > LOGGER_LINE_CAP then
-    --    -- pop one logger line.
-    --    table.remove(self.current, 1)
-    --end
+    if #self.current > 39 then
+        -- pop one logger line.
+        table.remove(self.current, 1)
+    end
 end
 
 function logger:clear()

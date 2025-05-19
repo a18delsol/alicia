@@ -155,7 +155,8 @@ impl Script {
         let lua = {
             if status_info.safe {
                 // alicia is in safe mode, only load the safe standard Lua library.
-                Lua::new_with(LuaStdLib::ALL_SAFE, LuaOptions::new())?
+                //Lua::new_with(LuaStdLib::ALL_SAFE, LuaOptions::new())?
+                unsafe { Lua::unsafe_new_with(LuaStdLib::ALL, LuaOptions::new()) }
             } else {
                 // alicia is in unsafe mode, load every Lua library and allow loading foreign native code.
                 unsafe { Lua::unsafe_new_with(LuaStdLib::ALL, LuaOptions::new()) }

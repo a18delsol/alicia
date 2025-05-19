@@ -53,7 +53,7 @@ use crate::window::*;
 
 //================================================================
 
-use raylib::prelude::*;
+////use raylib::prelude::*;
 
 #[cfg(feature = "embed")]
 use rust_embed::Embed;
@@ -231,9 +231,10 @@ impl Status {
     pub async fn missing(
         handle: &mut RaylibHandle,
         thread: &RaylibThread,
-        window: &mut Window,
+        //window: &mut Window,
     ) -> Option<Status> {
-        window.missing(handle, thread).await
+        None
+        //window.missing(handle, thread).await
     }
 
     // success state.
@@ -263,13 +264,6 @@ impl Status {
                 if context.is_some() {
                     unsafe {
                         ffi::EnableCursor();
-                        ffi::EndMode3D();
-                        ffi::EndMode2D();
-                        ffi::EndTextureMode();
-                        ffi::EndShaderMode();
-                        ffi::EndBlendMode();
-                        ffi::EndScissorMode();
-                        ffi::EndDrawing();
                         ffi::SetMouseOffset(0, 0);
                         ffi::SetMouseScale(1.0, 1.0);
                     }
@@ -282,12 +276,15 @@ impl Status {
 
     // failure state.
     pub async fn failure(
-        handle: &mut RaylibHandle,
-        thread: &RaylibThread,
-        window: &mut Window,
+        //handle: &mut RaylibHandle,
+        //thread: &RaylibThread,
+        //window: &mut Window,
         script: &Option<Script>,
         text: &str,
     ) -> Option<Status> {
+        return None;
+
+        /*
         // a script instance is available, and a crash-handler was set in Lua.
         if let Some(script) = script {
             if script.fail.is_some() {
@@ -317,6 +314,7 @@ impl Status {
 
         // no script instance is available, or a custom crash-handler has not been set.
         window.failure(handle, thread, text).await
+        */
     }
 
     // panic window, useful for when no RL context is available to display an error.

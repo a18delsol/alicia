@@ -54,7 +54,7 @@ use crate::status::*;
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 
 //================================================================
 
@@ -190,9 +190,11 @@ impl mlua::UserData for Shader {
             unsafe {
                 ffi::BeginShaderMode(*this.0);
 
-                call.call::<()>(())?;
+                let call = call.call::<()>(());
 
                 ffi::EndShaderMode();
+
+                call?;
             }
 
             Ok(())
