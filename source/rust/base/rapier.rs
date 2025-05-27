@@ -53,6 +53,7 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
 use rapier3d::control::CharacterLength;
 use rapier3d::{
@@ -60,7 +61,6 @@ use rapier3d::{
     parry,
     prelude::*,
 };
-//use raylib::prelude::*;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
@@ -171,7 +171,7 @@ impl mlua::UserData for Rapier {
                 Option<LuaValue>,
                 Option<LuaValue>,
             )| {
-                let ray: raylib::math::Ray = lua.from_value(ray)?;
+                let ray: crate::base::helper::Ray = lua.from_value(ray)?;
                 let ray = rapier3d::geometry::Ray::new(
                     point![ray.position.x, ray.position.y, ray.position.z],
                     vector![ray.direction.x, ray.direction.y, ray.direction.z],
@@ -229,7 +229,7 @@ impl mlua::UserData for Rapier {
                 Option<LuaValue>,
                 Option<LuaValue>,
             )| {
-                let ray: raylib::math::Ray = lua.from_value(ray)?;
+                let ray: crate::base::helper::Ray = lua.from_value(ray)?;
                 let ray = rapier3d::geometry::Ray::new(
                     point![ray.position.x, ray.position.y, ray.position.z],
                     vector![ray.direction.x, ray.direction.y, ray.direction.z],
@@ -1255,16 +1255,23 @@ impl DebugRenderBackend for DebugRender {
         color: [f32; 4],
     ) {
         unsafe {
-            ffi::DrawLine3D(
-                Vector3::new(a.x, a.y, a.z).into(),
-                Vector3::new(b.x, b.y, b.z).into(),
-                Color::new(
-                    (255.0 * color[0]) as u8,
-                    (255.0 * color[1]) as u8,
-                    (255.0 * color[2]) as u8,
-                    (255.0 * color[3]) as u8,
-                )
-                .into(),
+            DrawLine3D(
+                Vector3 {
+                    x: a.x,
+                    y: a.y,
+                    z: a.z,
+                },
+                Vector3 {
+                    x: b.x,
+                    y: b.y,
+                    z: b.z,
+                },
+                Color {
+                    r: (255.0 * color[0]) as u8,
+                    g: (255.0 * color[1]) as u8,
+                    b: (255.0 * color[2]) as u8,
+                    a: (255.0 * color[3]) as u8,
+                },
             );
         }
     }

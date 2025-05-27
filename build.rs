@@ -105,9 +105,9 @@ fn write_documentation() {
     }
 }
 
-fn generate_binding_file(path: &str, file: &str) {
+fn generate_binding_file(path: &[String], file: &str) {
     let bindings = bindgen::Builder::default()
-        .header(path)
+        .headers(path)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
@@ -122,29 +122,29 @@ fn generate_binding_file(path: &str, file: &str) {
 fn main() {
     use cmake::Config;
 
-    let dst = Config::new("source/rust/base/external/r3d-master")
-        .define("R3D_RAYLIB_VENDORED", "1")
-        .build_target(".")
-        .build();
-    println!("cargo:rustc-link-search=native={}/build", dst.display());
-    println!("cargo:rustc-link-lib=static=r3d");
-
     let dst = Config::new("source/rust/base/external/r3d-master/external/raylib")
         .build_target(".")
         .build();
-    println!("cargo:rustc-link-search=native={}", dst.display());
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=raylib");
 
-    generate_binding_file(
-        "source/rust/base/external/r3d-master/include/r3d.h",
-        "r3d-bind.rs",
-    );
+    let dst = Config::new("source/rust/base/external/r3d-master")
+        .define("R3D_RAYLIB_VENDORED", "1")
+        .build();
+    println!("cargo:rustc-link-search=native={}/build", dst.display());
+    println!("cargo:rustc-link-lib=static=r3d");
 
     cc::Build::new()
         .file("source/rust/base/external/helper.c")
         .compile("helper");
 
-    generate_binding_file("source/rust/base/external/helper.h", "helper.rs");
+    generate_binding_file(
+        &[
+            "source/rust/base/external/r3d-master/include/r3d.h".to_string(),
+            "source/rust/base/external/helper.h".to_string(),
+        ],
+        "helper.rs",
+    );
 
     #[cfg(feature = "documentation")]
     {

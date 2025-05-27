@@ -53,8 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -65,24 +65,34 @@ use mlua::prelude::*;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let sound = lua.create_table()?;
 
-    sound.set("new",             lua.create_async_function(self::Sound::new)?)?;
-    sound.set("new_from_memory", lua.create_async_function(self::Sound::new_from_memory)?)?;
+    sound.set("new",             lua.create_async_function(self::LuaSound::new)?)?;
+    sound.set("new_from_memory", lua.create_async_function(self::LuaSound::new_from_memory)?)?;
 
     table.set("sound", sound)?;
 
     Ok(())
 }
 
-type RLSound = ffi::Sound;
-
 /* class
 { "version": "1.0.0", "name": "sound", "info": "An unique handle for sound in memory." }
 */
-struct Sound(RLSound, Vec<RLSound>);
+struct LuaSound(Sound, Vec<Sound>);
 
-unsafe impl Send for Sound {}
+impl Drop for LuaSound {
+    fn drop(&mut self) {
+        unsafe {
+            for alias in &self.1 {
+                UnloadSoundAlias(*alias);
+            }
 
-impl Sound {
+            UnloadSound(self.0);
+        }
+    }
+}
+
+unsafe impl Send for LuaSound {}
+
+impl LuaSound {
     /* entry
     {
         "version": "1.0.0",
@@ -93,7 +103,7 @@ impl Sound {
             { "name": "alias", "info": "OPTIONAL: The total sound alias count to load for the sound.", "kind": "number?" }
         ],
         "result": [
-            { "name": "sound", "info": "Sound resource.", "kind": "sound" }
+            { "name": "sound", "info": "LuaSound resource.", "kind": "sound" }
         ],
         "routine": true
     }
@@ -101,13 +111,13 @@ impl Sound {
     async fn new(lua: Lua, (path, alias): (String, Option<usize>)) -> mlua::Result<Self> {
         tokio::task::spawn_blocking(move || unsafe {
             let name = Script::rust_to_c_string(&ScriptData::get_path(&lua, &path)?)?;
-            let data = ffi::LoadSound(name.as_ptr());
+            let data = LoadSound(name.as_ptr());
             let alias = alias.unwrap_or_default();
             let mut array = Vec::with_capacity(alias);
 
-            if ffi::IsSoundValid(data) {
+            if IsSoundValid(data) {
                 for _ in 0..alias {
-                    let data = ffi::LoadSoundAlias(data);
+                    let data = LoadSoundAlias(data);
                     println!("Pushing alias...");
                     array.push(data);
                 }
@@ -115,7 +125,7 @@ impl Sound {
                 Ok(Self(data, array))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
-                    "Sound::new(): Could not load file \"{path}\"."
+                    "LuaSound::new(): Could not load file \"{path}\"."
                 )))
             }
         })
@@ -134,7 +144,7 @@ impl Sound {
             { "name": "kind",  "info": "The kind of sound file (.wav, etc.).",                         "kind": "string"  }
         ],
         "result": [
-            { "name": "music", "info": "Sound resource.", "kind": "sound" }
+            { "name": "music", "info": "LuaSound resource.", "kind": "sound" }
         ],
         "routine": true
     }
@@ -148,22 +158,22 @@ impl Sound {
         tokio::task::spawn_blocking(move || unsafe {
             let data = &data.0;
 
-            let data = ffi::LoadWaveFromMemory(
+            let data = LoadWaveFromMemory(
                 Script::rust_to_c_string(&kind)?.as_ptr(),
                 data.as_ptr(),
                 data.len() as i32,
             );
 
-            if ffi::IsWaveValid(data) {
-                let sound = ffi::LoadSoundFromWave(data);
+            if IsWaveValid(data) {
+                let sound = LoadSoundFromWave(data);
                 let alias = alias.unwrap_or_default();
                 let mut array = Vec::with_capacity(alias);
 
-                ffi::UnloadWave(data);
+                UnloadWave(data);
 
-                if ffi::IsSoundValid(sound) {
+                if IsSoundValid(sound) {
                     for _ in 0..alias {
-                        let data = ffi::LoadSoundAlias(sound);
+                        let data = LoadSoundAlias(sound);
                         println!("Pushing alias...");
                         array.push(data);
                     }
@@ -171,12 +181,12 @@ impl Sound {
                     Ok(Self(sound, array))
                 } else {
                     Err(mlua::Error::RuntimeError(
-                        "Sound::new_from_memory(): Could not load file.".to_string(),
+                        "LuaSound::new_from_memory(): Could not load file.".to_string(),
                     ))
                 }
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Sound::new_from_memory(): Could not load file.".to_string(),
+                    "LuaSound::new_from_memory(): Could not load file.".to_string(),
                 ))
             }
         })
@@ -185,19 +195,7 @@ impl Sound {
     }
 }
 
-impl Drop for Sound {
-    fn drop(&mut self) {
-        unsafe {
-            for alias in &self.1 {
-                ffi::UnloadSoundAlias(*alias);
-            }
-
-            ffi::UnloadSound(self.0);
-        }
-    }
-}
-
-impl mlua::UserData for Sound {
+impl mlua::UserData for LuaSound {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
         field.add_field_method_get("alias_count", |_: &Lua, this| Ok(this.1.len()));
     }
@@ -207,7 +205,7 @@ impl mlua::UserData for Sound {
         { "version": "1.0.0", "name": "sound:create_alias", "info": "Create a sound alias." }
         */
         method.add_method_mut("create_alias", |_, this, _: ()| unsafe {
-            let data = ffi::LoadSoundAlias(this.0);
+            let data = LoadSoundAlias(this.0);
             this.1.push(data);
 
             Ok(())
@@ -219,7 +217,7 @@ impl mlua::UserData for Sound {
         method.add_method_mut("remove_alias", |_, this, _: ()| unsafe {
             if !this.1.is_empty() {
                 if let Some(alias) = this.1.first() {
-                    ffi::UnloadSoundAlias(*alias);
+                    UnloadSoundAlias(*alias);
                     this.1.remove(0);
                 }
             }
@@ -232,7 +230,7 @@ impl mlua::UserData for Sound {
         */
         method.add_method_mut("clear_alias", |_, this, _: ()| unsafe {
             for alias in &this.1 {
-                ffi::UnloadSoundAlias(*alias);
+                UnloadSoundAlias(*alias);
             }
 
             this.1.clear();
@@ -246,12 +244,12 @@ impl mlua::UserData for Sound {
         method.add_method("play", |_, this, alias: Option<usize>| unsafe {
             if let Some(alias) = alias {
                 if let Some(alias) = this.1.get(alias) {
-                    ffi::PlaySound(*alias);
+                    PlaySound(*alias);
                 } else {
                     return Err(mlua::Error::runtime("sound::play(): Invalid alias index."));
                 }
             } else {
-                ffi::PlaySound(this.0);
+                PlaySound(this.0);
             }
 
             Ok(())
@@ -270,14 +268,14 @@ impl mlua::UserData for Sound {
         method.add_method("get_playing", |_, this, alias: Option<usize>| unsafe {
             if let Some(alias) = alias {
                 if let Some(alias) = this.1.get(alias) {
-                    Ok(ffi::IsSoundPlaying(*alias))
+                    Ok(IsSoundPlaying(*alias))
                 } else {
                     Err(mlua::Error::runtime(
                         "sound::get_playing(): Invalid alias index.",
                     ))
                 }
             } else {
-                Ok(ffi::IsSoundPlaying(this.0))
+                Ok(IsSoundPlaying(this.0))
             }
         });
 
@@ -287,12 +285,12 @@ impl mlua::UserData for Sound {
         method.add_method("stop", |_, this, alias: Option<usize>| unsafe {
             if let Some(alias) = alias {
                 if let Some(alias) = this.1.get(alias) {
-                    ffi::StopSound(*alias);
+                    StopSound(*alias);
                 } else {
                     return Err(mlua::Error::runtime("sound::stop(): Invalid alias index."));
                 }
             } else {
-                ffi::StopSound(this.0);
+                StopSound(this.0);
             }
 
             Ok(())
@@ -304,12 +302,12 @@ impl mlua::UserData for Sound {
         method.add_method("pause", |_, this, alias: Option<usize>| unsafe {
             if let Some(alias) = alias {
                 if let Some(alias) = this.1.get(alias) {
-                    ffi::PauseSound(*alias);
+                    PauseSound(*alias);
                 } else {
                     return Err(mlua::Error::runtime("sound::pause(): Invalid alias index."));
                 }
             } else {
-                ffi::PauseSound(this.0);
+                PauseSound(this.0);
             }
 
             Ok(())
@@ -321,14 +319,14 @@ impl mlua::UserData for Sound {
         method.add_method("resume", |_, this, alias: Option<usize>| unsafe {
             if let Some(alias) = alias {
                 if let Some(alias) = this.1.get(alias) {
-                    ffi::ResumeSound(*alias);
+                    ResumeSound(*alias);
                 } else {
                     return Err(mlua::Error::runtime(
                         "sound::resume(): Invalid alias index.",
                     ));
                 }
             } else {
-                ffi::ResumeSound(this.0);
+                ResumeSound(this.0);
             }
 
             Ok(())
@@ -349,14 +347,14 @@ impl mlua::UserData for Sound {
             |_, this, (value, alias): (f32, Option<usize>)| unsafe {
                 if let Some(alias) = alias {
                     if let Some(alias) = this.1.get(alias) {
-                        ffi::SetSoundVolume(*alias, value);
+                        SetSoundVolume(*alias, value);
                     } else {
                         return Err(mlua::Error::runtime(
                             "sound::set_volume(): Invalid alias index.",
                         ));
                     }
                 } else {
-                    ffi::SetSoundVolume(this.0, value);
+                    SetSoundVolume(this.0, value);
                 }
 
                 Ok(())
@@ -378,14 +376,14 @@ impl mlua::UserData for Sound {
             |_, this, (value, alias): (f32, Option<usize>)| unsafe {
                 if let Some(alias) = alias {
                     if let Some(alias) = this.1.get(alias) {
-                        ffi::SetSoundPitch(*alias, value);
+                        SetSoundPitch(*alias, value);
                     } else {
                         return Err(mlua::Error::runtime(
                             "sound::set_pitch(): Invalid alias index.",
                         ));
                     }
                 } else {
-                    ffi::SetSoundPitch(this.0, value);
+                    SetSoundPitch(this.0, value);
                 }
 
                 Ok(())
@@ -407,14 +405,14 @@ impl mlua::UserData for Sound {
             |_, this, (value, alias): (f32, Option<usize>)| unsafe {
                 if let Some(alias) = alias {
                     if let Some(alias) = this.1.get(alias) {
-                        ffi::SetSoundPan(*alias, value);
+                        SetSoundPan(*alias, value);
                     } else {
                         return Err(mlua::Error::runtime(
                             "sound::set_pan(): Invalid alias index.",
                         ));
                     }
                 } else {
-                    ffi::SetSoundPan(this.0, value);
+                    SetSoundPan(this.0, value);
                 }
 
                 Ok(())

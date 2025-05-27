@@ -53,8 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 use super::helper;
 
@@ -67,10 +67,10 @@ use super::helper;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let font = lua.create_table()?;
 
-    font.set("new_default",         lua.create_function(self::Font::new_default)?)?;     // GetFontDefault
-    font.set("new",                 lua.create_function(self::Font::new)?)?;             // LoadFont/*Ex TO-DO convert to Ex
-    //font.set("new_from_image",      lua.create_function(self::Font::new_from_image)?)?;  // LoadFontFromImage
-    font.set("new_from_memory",     lua.create_function(self::Font::new_from_memory)?)?; // LoadFontFromMemory
+    font.set("new_default",         lua.create_function(self::LuaFont::new_default)?)?;     // GetFontDefault
+    font.set("new",                 lua.create_function(self::LuaFont::new)?)?;             // LoadFont/*Ex TO-DO convert to Ex
+    //font.set("new_from_image",      lua.create_function(self::LuaFont::new_from_image)?)?;  // LoadFontFromImage
+    font.set("new_from_memory",     lua.create_function(self::LuaFont::new_from_memory)?)?; // LoadFontFromMemory
     
     //================================================================
 
@@ -86,16 +86,22 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
     Ok(())
 }
 
-type RLFont = raylib::core::text::Font;
-
 /* class
 { "version": "1.0.0", "name": "font", "info": "An unique handle to a font in memory." }
 */
-struct Font(RLFont);
+struct LuaFont(Font);
 
-unsafe impl Send for Font {}
+impl Drop for LuaFont {
+    fn drop(&mut self) {
+        unsafe {
+            UnloadFont(self.0);
+        }
+    }
+}
 
-impl mlua::UserData for Font {
+unsafe impl Send for LuaFont {}
+
+impl mlua::UserData for LuaFont {
     fn add_fields<F: mlua::UserDataFields<Self>>(_: &mut F) {}
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
@@ -134,15 +140,15 @@ impl mlua::UserData for Font {
                 let text = Script::rust_to_c_string(&text)?;
 
                 unsafe {
-                    ffi::DrawTextPro(
-                        *this.0,
+                    DrawTextPro(
+                        this.0,
                         text.as_ptr(),
-                        point.into(),
-                        origin.into(),
+                        point,
+                        origin,
                         angle,
                         scale,
                         space,
-                        color.into(),
+                        color,
                     );
                     Ok(())
                 }
@@ -166,10 +172,8 @@ impl mlua::UserData for Font {
                 let text = Script::rust_to_c_string(&text)?;
 
                 unsafe {
-                    let font: helper::Font = std::mem::transmute(*this.0);
-
                     let result = helper::DrawTextBoxed(
-                        font,
+                        this.0,
                         text.as_ptr(),
                         helper::Rectangle {
                             x: shape.x,
@@ -215,7 +219,7 @@ impl mlua::UserData for Font {
                 let text = Script::rust_to_c_string(&text)?;
 
                 unsafe {
-                    let result = ffi::MeasureTextEx(*this.0, text.as_ptr(), scale, space);
+                    let result = MeasureTextEx(this.0, text.as_ptr(), scale, space);
                     Ok((result.x, result.y))
                 }
             },
@@ -230,10 +234,8 @@ impl mlua::UserData for Font {
                 let text = Script::rust_to_c_string(&text)?;
 
                 unsafe {
-                    let font: helper::Font = std::mem::transmute(*this.0);
-
                     let result = helper::MeasureTextBoxed(
-                        font,
+                        this.0,
                         text.as_ptr(),
                         helper::Rectangle {
                             x: shape.x,
@@ -253,7 +255,7 @@ impl mlua::UserData for Font {
     }
 }
 
-impl Font {
+impl LuaFont {
     /* entry
     {
         "version": "1.0.0",
@@ -264,7 +266,7 @@ impl Font {
             { "name": "size", "info": "Size for font.",     "kind": "number" }
         ],
         "result": [
-            { "name": "font", "info": "Font resource.", "kind": "font" }
+            { "name": "font", "info": "LuaFont resource.", "kind": "font" }
         ]
     }
     */
@@ -272,13 +274,13 @@ impl Font {
         unsafe {
             let name = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
-            let data = ffi::LoadFontEx(name.as_ptr(), size, std::ptr::null_mut(), 0);
+            let data = LoadFontEx(name.as_ptr(), size, std::ptr::null_mut(), 0);
 
-            if ffi::IsFontValid(data) {
-                Ok(Self(RLFont::from_raw(data)))
+            if IsFontValid(data) {
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
-                    "Font::new(): Could not load file \"{path}\"."
+                    "LuaFont::new(): Could not load file \"{path}\"."
                 )))
             }
         }
@@ -295,7 +297,7 @@ impl Font {
             { "name": "size", "info": "Size for font.",                      "kind": "number" }
         ],
         "result": [
-            { "name": "font", "info": "Font resource.", "kind": "font" }
+            { "name": "font", "info": "LuaFont resource.", "kind": "font" }
         ]
     }
     */
@@ -305,7 +307,7 @@ impl Font {
         unsafe {
             let data = &data.0;
 
-            let data = ffi::LoadFontFromMemory(
+            let data = LoadFontFromMemory(
                 Script::rust_to_c_string(&kind)?.as_ptr(),
                 data.as_ptr(),
                 data.len() as i32,
@@ -314,11 +316,11 @@ impl Font {
                 0,
             );
 
-            if ffi::IsFontValid(data) {
-                Ok(Self(RLFont::from_raw(data)))
+            if IsFontValid(data) {
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Font::new_from_memory(): Could not load file.".to_string(),
+                    "LuaFont::new_from_memory(): Could not load file.".to_string(),
                 ))
             }
         }
@@ -333,7 +335,7 @@ impl Font {
             { "name": "size", "info": "Size for font.", "kind": "number" }
         ],
         "result": [
-            { "name": "font", "info": "Font resource.", "kind": "font" }
+            { "name": "font", "info": "LuaFont resource.", "kind": "font" }
         ]
     }
     */
@@ -341,7 +343,7 @@ impl Font {
         let data = Status::FONT;
 
         unsafe {
-            let data = ffi::LoadFontFromMemory(
+            let data = LoadFontFromMemory(
                 Script::rust_to_c_string(".ttf")?.as_ptr(),
                 data.as_ptr(),
                 data.len() as i32,
@@ -350,11 +352,11 @@ impl Font {
                 0,
             );
 
-            if ffi::IsFontValid(data) {
-                Ok(Self(RLFont::from_raw(data)))
+            if IsFontValid(data) {
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Font::new_from_default(): Could not load file.".to_string(),
+                    "LuaFont::new_from_default(): Could not load file.".to_string(),
                 ))
             }
         }
@@ -372,7 +374,7 @@ fn draw_frame_rate(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
     let point: Vector2 = lua.from_value(point)?;
 
     unsafe {
-        ffi::DrawFPS(point.x as i32, point.y as i32);
+        DrawFPS(point.x as i32, point.y as i32);
         Ok(())
     }
 }
@@ -399,13 +401,7 @@ fn draw_text(
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::DrawText(
-            label.as_ptr(),
-            point.x as i32,
-            point.y as i32,
-            scale,
-            color.into(),
-        );
+        DrawText(label.as_ptr(), point.x as i32, point.y as i32, scale, color);
         Ok(())
     }
 }
@@ -422,7 +418,7 @@ fn draw_text(
 */
 fn set_text_line_space(_: &Lua, space: i32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetTextLineSpacing(space);
+        SetTextLineSpacing(space);
     }
 
     Ok(())

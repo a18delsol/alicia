@@ -55,8 +55,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "system_info")]
@@ -70,13 +70,6 @@ use sysinfo::System;
 #[rustfmt::skip]
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let general = lua.create_table()?;
-
-    /*
-    general.set("r3d_begin",    lua.create_function(self::r3d_begin)?)?;
-    general.set("r3d_close",    lua.create_function(self::r3d_close)?)?;
-    general.set("r3d_begin_3d", lua.create_function(self::r3d_begin_3d)?)?;
-    general.set("r3d_close_3d", lua.create_function(self::r3d_close_3d)?)?;
-    */
 
     general.set("load_base",       lua.create_function(self::load_base)?)?;
     general.set("set_log_level",   lua.create_function(self::set_log_level)?)?;
@@ -101,52 +94,6 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 }
 
 //================================================================
-
-/*
-fn r3d_begin(_: &Lua, _: ()) -> mlua::Result<()> {
-    unsafe {
-        r3d::R3D_Init(800, 600, 0);
-        let light = r3d::R3D_CreateLight(0);
-        r3d::R3D_SetLightDirection(
-            light,
-            r3d::Vector3 {
-                x: -1.0,
-                y: -1.0,
-                z: -1.0,
-            },
-        );
-        r3d::R3D_SetLightActive(light, true);
-
-        Ok(())
-    }
-}
-
-fn r3d_close(_: &Lua, _: ()) -> mlua::Result<()> {
-    unsafe {
-        r3d::R3D_Close();
-        Ok(())
-    }
-}
-
-fn r3d_begin_3d(lua: &Lua, camera: LuaValue) -> mlua::Result<()> {
-    unsafe {
-        let camera: Camera3D = lua.from_value(camera)?;
-        let camera: ffi::Camera3D = camera.into();
-
-        r3d::R3D_Begin(std::mem::transmute(camera));
-
-        Ok(())
-    }
-}
-
-fn r3d_close_3d(_: &Lua, _: ()) -> mlua::Result<()> {
-    unsafe {
-        r3d::R3D_End();
-
-        Ok(())
-    }
-}
-*/
 
 /* entry
 {
@@ -200,7 +147,7 @@ fn load_base(lua: &Lua, _: ()) -> mlua::Result<()> {
 */
 fn set_log_level(_: &Lua, level: i32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetTraceLogLevel(level);
+        SetTraceLogLevel(level);
         Ok(())
     }
 }
@@ -217,7 +164,7 @@ fn set_log_level(_: &Lua, level: i32) -> mlua::Result<()> {
 */
 fn open_link(_: &Lua, link: String) -> mlua::Result<()> {
     unsafe {
-        ffi::OpenURL(link.as_ptr() as *const i8);
+        OpenURL(link.as_ptr() as *const i8);
         Ok(())
     }
 }
@@ -232,7 +179,7 @@ fn open_link(_: &Lua, link: String) -> mlua::Result<()> {
 }
 */
 fn get_time(_: &Lua, _: ()) -> mlua::Result<f64> {
-    unsafe { Ok(ffi::GetTime()) }
+    unsafe { Ok(GetTime()) }
 }
 
 /* entry
@@ -262,7 +209,7 @@ fn get_time_unix(_: &Lua, add: Option<i64>) -> mlua::Result<String> {
 }
 */
 fn get_frame_time(_: &Lua, _: ()) -> mlua::Result<f32> {
-    unsafe { Ok(ffi::GetFrameTime()) }
+    unsafe { Ok(GetFrameTime()) }
 }
 
 /* entry
@@ -275,7 +222,7 @@ fn get_frame_time(_: &Lua, _: ()) -> mlua::Result<f32> {
 }
 */
 fn get_frame_rate(_: &Lua, _: ()) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetFPS()) }
+    unsafe { Ok(GetFPS()) }
 }
 
 /* entry
@@ -289,7 +236,7 @@ fn get_frame_rate(_: &Lua, _: ()) -> mlua::Result<i32> {
 */
 fn set_frame_rate(_: &Lua, rate: i32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetTargetFPS(rate);
+        SetTargetFPS(rate);
         Ok(())
     }
 }
@@ -362,42 +309,547 @@ fn get_info(lua: &Lua, _: ()) -> mlua::Result<LuaValue> {
 
 //================================================================
 
-#[derive(Deserialize, Serialize)]
-pub struct Camera2D {
-    pub shift: Vector2,
-    pub focus: Vector2,
-    pub angle: f32,
-    pub zoom: f32,
-}
+use serde::ser::SerializeMap;
+use serde::{Deserializer, Serializer, de::MapAccess, de::Visitor};
+use std::fmt;
 
-impl From<Camera2D> for ffi::Camera2D {
-    fn from(val: Camera2D) -> Self {
-        ffi::Camera2D {
-            offset: val.shift.into(),
-            target: val.focus.into(),
-            rotation: val.angle,
-            zoom: val.zoom,
-        }
+impl<'de> Deserialize<'de> for Vector2 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(Vector2Visitor)
     }
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct Camera3D {
-    pub point: Vector3,
-    pub focus: Vector3,
-    pub angle: Vector3,
-    pub zoom: f32,
-    pub kind: i32,
+struct Vector2Visitor;
+
+impl<'de> Visitor<'de> for Vector2Visitor {
+    type Value = Vector2;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut x = None;
+        let mut y = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "x" => x = Some(map.next_value()?),
+                "y" => y = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if x.is_none() {
+            return Err(serde::de::Error::custom("vector_2: Missing \"x\" key."));
+        }
+
+        if y.is_none() {
+            return Err(serde::de::Error::custom("vector_2: Missing \"y\" key."));
+        }
+
+        Ok(Vector2 {
+            x: x.unwrap(),
+            y: y.unwrap(),
+        })
+    }
 }
 
-impl From<Camera3D> for ffi::Camera3D {
-    fn from(val: Camera3D) -> Self {
-        ffi::Camera3D {
-            position: val.point.into(),
-            target: val.focus.into(),
-            up: val.angle.into(),
-            fovy: val.zoom,
-            projection: val.kind,
+impl Serialize for Vector3 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_map(Some(3))?;
+        seq.serialize_entry("x", &self.x)?;
+        seq.serialize_entry("y", &self.y)?;
+        seq.serialize_entry("z", &self.z)?;
+        seq.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Vector3 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(Vector3Visitor)
+    }
+}
+
+struct Vector3Visitor;
+
+impl<'de> Visitor<'de> for Vector3Visitor {
+    type Value = Vector3;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut x = None;
+        let mut y = None;
+        let mut z = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "x" => x = Some(map.next_value()?),
+                "y" => y = Some(map.next_value()?),
+                "z" => z = Some(map.next_value()?),
+                _ => {}
+            }
         }
+
+        if x.is_none() {
+            return Err(serde::de::Error::custom("vector_3: Missing \"x\" key."));
+        }
+
+        if y.is_none() {
+            return Err(serde::de::Error::custom("vector_3: Missing \"y\" key."));
+        }
+
+        if z.is_none() {
+            return Err(serde::de::Error::custom("vector_3: Missing \"z\" key."));
+        }
+
+        Ok(Vector3 {
+            x: x.unwrap(),
+            y: y.unwrap(),
+            z: z.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Vector4 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(Vector4Visitor)
+    }
+}
+
+struct Vector4Visitor;
+
+impl<'de> Visitor<'de> for Vector4Visitor {
+    type Value = Vector4;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut x = None;
+        let mut y = None;
+        let mut z = None;
+        let mut w = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "x" => x = Some(map.next_value()?),
+                "y" => y = Some(map.next_value()?),
+                "z" => z = Some(map.next_value()?),
+                "w" => w = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if x.is_none() {
+            return Err(serde::de::Error::custom("vector_4: Missing \"x\" key."));
+        }
+
+        if y.is_none() {
+            return Err(serde::de::Error::custom("vector_4: Missing \"y\" key."));
+        }
+
+        if z.is_none() {
+            return Err(serde::de::Error::custom("vector_4: Missing \"z\" key."));
+        }
+
+        if w.is_none() {
+            return Err(serde::de::Error::custom("vector_4: Missing \"z\" key."));
+        }
+
+        Ok(Vector4 {
+            x: x.unwrap(),
+            y: y.unwrap(),
+            z: z.unwrap(),
+            w: w.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Rectangle {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(RectangleVisitor)
+    }
+}
+
+struct RectangleVisitor;
+
+impl<'de> Visitor<'de> for RectangleVisitor {
+    type Value = Rectangle;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut x = None;
+        let mut y = None;
+        let mut s_x = None;
+        let mut s_y = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "x" => x = Some(map.next_value()?),
+                "y" => y = Some(map.next_value()?),
+                "width" => s_x = Some(map.next_value()?),
+                "height" => s_y = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if x.is_none() {
+            return Err(serde::de::Error::custom("box_2: Missing \"x\" key."));
+        }
+
+        if y.is_none() {
+            return Err(serde::de::Error::custom("box_2: Missing \"y\" key."));
+        }
+
+        if s_x.is_none() {
+            return Err(serde::de::Error::custom("box_2: Missing \"width\" key."));
+        }
+
+        if s_y.is_none() {
+            return Err(serde::de::Error::custom("box_2: Missing \"height\" key."));
+        }
+
+        Ok(Rectangle {
+            x: x.unwrap(),
+            y: y.unwrap(),
+            width: s_x.unwrap(),
+            height: s_y.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for BoundingBox {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(BoundingBoxVisitor)
+    }
+}
+
+struct BoundingBoxVisitor;
+
+impl<'de> Visitor<'de> for BoundingBoxVisitor {
+    type Value = BoundingBox;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut min = None;
+        let mut max = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "min" => min = Some(map.next_value()?),
+                "max" => max = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if min.is_none() {
+            return Err(serde::de::Error::custom("box_3: Missing \"min\" key."));
+        }
+
+        if max.is_none() {
+            return Err(serde::de::Error::custom("box_3: Missing \"max\" key."));
+        }
+
+        Ok(BoundingBox {
+            min: min.unwrap(),
+            max: max.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Color {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(ColorVisitor)
+    }
+}
+
+struct ColorVisitor;
+
+impl<'de> Visitor<'de> for ColorVisitor {
+    type Value = Color;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut r = None;
+        let mut g = None;
+        let mut b = None;
+        let mut a = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "r" => r = Some(map.next_value()?),
+                "g" => g = Some(map.next_value()?),
+                "b" => b = Some(map.next_value()?),
+                "a" => a = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if r.is_none() {
+            return Err(serde::de::Error::custom("color: Missing \"r\" key."));
+        }
+
+        if g.is_none() {
+            return Err(serde::de::Error::custom("color: Missing \"g\" key."));
+        }
+
+        if b.is_none() {
+            return Err(serde::de::Error::custom("color: Missing \"b\" key."));
+        }
+
+        if a.is_none() {
+            return Err(serde::de::Error::custom("color: Missing \"a\" key."));
+        }
+
+        Ok(Color {
+            r: r.unwrap(),
+            g: g.unwrap(),
+            b: b.unwrap(),
+            a: a.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Ray {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(RayVisitor)
+    }
+}
+
+struct RayVisitor;
+
+impl<'de> Visitor<'de> for RayVisitor {
+    type Value = Ray;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut position = None;
+        let mut direction = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "position" => position = Some(map.next_value()?),
+                "direction" => direction = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if position.is_none() {
+            return Err(serde::de::Error::custom("ray: Missing \"position\" key."));
+        }
+
+        if direction.is_none() {
+            return Err(serde::de::Error::custom("ray: Missing \"direction\" key."));
+        }
+
+        Ok(Ray {
+            position: position.unwrap(),
+            direction: direction.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Camera2D {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(Camera2DVisitor)
+    }
+}
+
+struct Camera2DVisitor;
+
+impl<'de> Visitor<'de> for Camera2DVisitor {
+    type Value = Camera2D;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut offset = None;
+        let mut target = None;
+        let mut rotation = None;
+        let mut zoom = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "shift" => offset = Some(map.next_value()?),
+                "focus" => target = Some(map.next_value()?),
+                "angle" => rotation = Some(map.next_value()?),
+                "zoom" => zoom = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if offset.is_none() {
+            return Err(serde::de::Error::custom(
+                "camera_2d: Missing \"shift\" key.",
+            ));
+        }
+
+        if target.is_none() {
+            return Err(serde::de::Error::custom(
+                "camera_2d: Missing \"focus\" key.",
+            ));
+        }
+
+        if rotation.is_none() {
+            return Err(serde::de::Error::custom(
+                "camera_2d: Missing \"angle\" key.",
+            ));
+        }
+
+        if zoom.is_none() {
+            return Err(serde::de::Error::custom("camera_2d: Missing \"zoom\" key."));
+        }
+
+        Ok(Camera2D {
+            offset: offset.unwrap(),
+            target: target.unwrap(),
+            rotation: rotation.unwrap(),
+            zoom: zoom.unwrap(),
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Camera3D {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(Camera3DVisitor)
+    }
+}
+
+struct Camera3DVisitor;
+
+impl<'de> Visitor<'de> for Camera3DVisitor {
+    type Value = Camera3D;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map with keys 'first' and 'second'")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut position = None;
+        let mut target = None;
+        let mut up = None;
+        let mut fovy = None;
+        let mut projection = None;
+
+        while let Some(k) = map.next_key::<String>()? {
+            match k.as_str() {
+                "point" => position = Some(map.next_value()?),
+                "focus" => target = Some(map.next_value()?),
+                "angle" => up = Some(map.next_value()?),
+                "zoom" => fovy = Some(map.next_value()?),
+                "kind" => projection = Some(map.next_value()?),
+                _ => {}
+            }
+        }
+
+        if position.is_none() {
+            return Err(serde::de::Error::custom(
+                "camera_3d: Missing \"point\" key.",
+            ));
+        }
+
+        if target.is_none() {
+            return Err(serde::de::Error::custom(
+                "camera_3d: Missing \"focus\" key.",
+            ));
+        }
+
+        if up.is_none() {
+            return Err(serde::de::Error::custom(
+                "camera_3d: Missing \"angle\" key.",
+            ));
+        }
+
+        if fovy.is_none() {
+            return Err(serde::de::Error::custom("camera_3d: Missing \"zoom\" key."));
+        }
+
+        if projection.is_none() {
+            return Err(serde::de::Error::custom("camera_3d: Missing \"kind\" key."));
+        }
+
+        Ok(Camera3D {
+            position: position.unwrap(),
+            target: target.unwrap(),
+            up: up.unwrap(),
+            fovy: fovy.unwrap(),
+            projection: projection.unwrap(),
+        })
     }
 }

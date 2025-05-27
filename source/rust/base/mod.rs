@@ -49,6 +49,7 @@
 */
 
 pub mod helper;
+pub mod r3d;
 
 /* base library */
 pub mod automation;

@@ -51,7 +51,7 @@
 #[cfg(test)]
 mod test_main {
     use crate::script::*;
-    //use raylib::prelude::*;
+    use crate::base::helper::*;
 
     async fn test_folder(path: &str) {
         let path_list = std::fs::read_dir(format!("test/system/{path}")).unwrap();

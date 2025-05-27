@@ -53,12 +53,10 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
-
-type RLImage = ffi::Image;
 
 //================================================================
 
@@ -69,21 +67,21 @@ type RLImage = ffi::Image;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let image = lua.create_table()?;
 
-    image.set("new",             lua.create_async_function(self::Image::new)?)?;       // LoadImage
-    image.set("new_from_memory", lua.create_function(self::Image::new_from_memory)?)?; // LoadImageFromMemory
-    image.set("new_from_screen", lua.create_function(self::Image::new_from_screen)?)?; // LoadImageFromScreen
+    image.set("new",             lua.create_async_function(self::LuaImage::new)?)?;       // LoadImage
+    image.set("new_from_memory", lua.create_function(self::LuaImage::new_from_memory)?)?; // LoadImageFromMemory
+    image.set("new_from_screen", lua.create_function(self::LuaImage::new_from_screen)?)?; // LoadImageFromScreen
 
     //================================================================
 
-    image.set("new_color",           lua.create_function(self::Image::new_color)?)?;           // GenImageColor
-    image.set("new_gradient_linear", lua.create_function(self::Image::new_gradient_linear)?)?; // GenImageGradientLinear
-    image.set("new_gradient_radial", lua.create_function(self::Image::new_gradient_radial)?)?; // GenImageGradientRadial
-    image.set("new_gradient_square", lua.create_function(self::Image::new_gradient_square)?)?; // GenImageGradientSquare
-    image.set("new_check",           lua.create_function(self::Image::new_check)?)?;           // GenImageChecked
-    image.set("new_white_noise",     lua.create_function(self::Image::new_white_noise)?)?;     // GenImageWhiteNoise
-    image.set("new_perlin_noise",    lua.create_function(self::Image::new_perlin_noise)?)?;    // GenImagePerlinNoise
-    image.set("new_cellular",        lua.create_function(self::Image::new_cellular)?)?;        // GenImageCellular
-    image.set("new_text",            lua.create_function(self::Image::new_text)?)?;            // GenImageText
+    image.set("new_color",           lua.create_function(self::LuaImage::new_color)?)?;           // GenImageColor
+    image.set("new_gradient_linear", lua.create_function(self::LuaImage::new_gradient_linear)?)?; // GenImageGradientLinear
+    image.set("new_gradient_radial", lua.create_function(self::LuaImage::new_gradient_radial)?)?; // GenImageGradientRadial
+    image.set("new_gradient_square", lua.create_function(self::LuaImage::new_gradient_square)?)?; // GenImageGradientSquare
+    image.set("new_check",           lua.create_function(self::LuaImage::new_check)?)?;           // GenImageChecked
+    image.set("new_white_noise",     lua.create_function(self::LuaImage::new_white_noise)?)?;     // GenImageWhiteNoise
+    image.set("new_perlin_noise",    lua.create_function(self::LuaImage::new_perlin_noise)?)?;    // GenImagePerlinNoise
+    image.set("new_cellular",        lua.create_function(self::LuaImage::new_cellular)?)?;        // GenImageCellular
+    image.set("new_text",            lua.create_function(self::LuaImage::new_text)?)?;            // GenImageText
 
     table.set("image", image)?;
 
@@ -101,11 +99,19 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
     ]
 }
 */
-pub struct Image(pub RLImage);
+struct LuaImage(Image);
 
-unsafe impl Send for Image {}
+impl Drop for LuaImage {
+    fn drop(&mut self) {
+        unsafe {
+            UnloadImage(self.0);
+        }
+    }
+}
 
-impl mlua::UserData for Image {
+unsafe impl Send for LuaImage {}
+
+impl mlua::UserData for LuaImage {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
         field.add_field_method_get("shape_x", |_: &Lua, this| Ok(this.0.width));
         field.add_field_method_get("shape_y", |_: &Lua, this| Ok(this.0.height));
@@ -125,7 +131,8 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("to_texture", |_: &Lua, this, _: ()| {
-            crate::base::texture::Texture::new_from_image(this.0)
+            //crate::base::texture::Texture::new_from_image(this)
+            Ok(())
         });
 
         /* entry
@@ -139,7 +146,7 @@ impl mlua::UserData for Image {
             let color: Color = lua.from_value(color)?;
 
             unsafe {
-                ffi::ImageToPOT(&mut this.0, color.into());
+                ImageToPOT(&mut this.0, color);
                 Ok(())
             }
         });
@@ -157,7 +164,7 @@ impl mlua::UserData for Image {
             let box_a: Rectangle = lua.from_value(box_a)?;
 
             unsafe {
-                ffi::ImageCrop(&mut this.0, box_a.into());
+                ImageCrop(&mut this.0, box_a);
                 Ok(())
             }
         });
@@ -170,7 +177,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("crop_alpha", |_: &Lua, this, threshold: f32| unsafe {
-            ffi::ImageAlphaCrop(&mut this.0, threshold);
+            ImageAlphaCrop(&mut this.0, threshold);
             Ok(())
         });
 
@@ -187,7 +194,7 @@ impl mlua::UserData for Image {
                 let color: Color = lua.from_value(color)?;
 
                 unsafe {
-                    ffi::ImageAlphaClear(&mut this.0, color.into(), threshold);
+                    ImageAlphaClear(&mut this.0, color, threshold);
                     Ok(())
                 }
             },
@@ -203,7 +210,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("blur_gaussian", |_: &Lua, this, amount: i32| unsafe {
-            ffi::ImageBlurGaussian(&mut this.0, amount);
+            ImageBlurGaussian(&mut this.0, amount);
             Ok(())
         });
 
@@ -217,7 +224,7 @@ impl mlua::UserData for Image {
         method.add_method_mut(
             "kernel_convolution",
             |_: &Lua, this, kernel: Vec<f32>| unsafe {
-                ffi::ImageKernelConvolution(&mut this.0, kernel.as_ptr(), kernel.len() as i32);
+                ImageKernelConvolution(&mut this.0, kernel.as_ptr(), kernel.len() as i32);
                 Ok(())
             },
         );
@@ -235,9 +242,9 @@ impl mlua::UserData for Image {
                 let shape: Vector2 = lua.from_value(shape)?;
 
                 if bicubic {
-                    ffi::ImageResize(&mut this.0, shape.x as i32, shape.y as i32);
+                    ImageResize(&mut this.0, shape.x as i32, shape.y as i32);
                 } else {
-                    ffi::ImageResizeNN(&mut this.0, shape.x as i32, shape.y as i32);
+                    ImageResizeNN(&mut this.0, shape.x as i32, shape.y as i32);
                 }
                 Ok(())
             },
@@ -257,13 +264,13 @@ impl mlua::UserData for Image {
                 let shift: Vector2 = lua.from_value(shift)?;
                 let color: Color = lua.from_value(color)?;
 
-                ffi::ImageResizeCanvas(
+                ImageResizeCanvas(
                     &mut this.0,
                     shape.x as i32,
                     shape.y as i32,
                     shift.x as i32,
                     shift.y as i32,
-                    color.into(),
+                    color,
                 );
                 Ok(())
             },
@@ -277,7 +284,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("mipmap", |_: &Lua, this, _: ()| unsafe {
-            ffi::ImageMipmaps(&mut this.0);
+            ImageMipmaps(&mut this.0);
             Ok(())
         });
 
@@ -291,7 +298,7 @@ impl mlua::UserData for Image {
         method.add_method_mut(
             "dither",
             |_: &Lua, this, (r_bpp, g_bpp, b_bpp, a_bpp): (i32, i32, i32, i32)| unsafe {
-                ffi::ImageDither(&mut this.0, r_bpp, g_bpp, b_bpp, a_bpp);
+                ImageDither(&mut this.0, r_bpp, g_bpp, b_bpp, a_bpp);
                 Ok(())
             },
         );
@@ -305,9 +312,9 @@ impl mlua::UserData for Image {
         */
         method.add_method_mut("flip", |_: &Lua, this, vertical: bool| unsafe {
             if vertical {
-                ffi::ImageFlipVertical(&mut this.0);
+                ImageFlipVertical(&mut this.0);
             } else {
-                ffi::ImageFlipHorizontal(&mut this.0);
+                ImageFlipHorizontal(&mut this.0);
             }
             Ok(())
         });
@@ -320,7 +327,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("rotate", |_: &Lua, this, angle: i32| unsafe {
-            ffi::ImageRotate(&mut this.0, angle);
+            ImageRotate(&mut this.0, angle);
             Ok(())
         });
 
@@ -336,7 +343,7 @@ impl mlua::UserData for Image {
         method.add_method_mut("color_tint", |lua: &Lua, this, color: LuaValue| unsafe {
             let color: Color = lua.from_value(color)?;
 
-            ffi::ImageColorTint(&mut this.0, color.into());
+            ImageColorTint(&mut this.0, color);
             Ok(())
         });
 
@@ -348,7 +355,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("color_invert", |_: &Lua, this, _: ()| unsafe {
-            ffi::ImageColorInvert(&mut this.0);
+            ImageColorInvert(&mut this.0);
             Ok(())
         });
 
@@ -360,7 +367,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("color_gray_scale", |_: &Lua, this, _: ()| unsafe {
-            ffi::ImageColorGrayscale(&mut this.0);
+            ImageColorGrayscale(&mut this.0);
             Ok(())
         });
 
@@ -372,7 +379,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("color_contrast", |_: &Lua, this, contrast: f32| unsafe {
-            ffi::ImageColorContrast(&mut this.0, contrast);
+            ImageColorContrast(&mut this.0, contrast);
             Ok(())
         });
 
@@ -389,7 +396,7 @@ impl mlua::UserData for Image {
                 let color_a: Color = lua.from_value(color_a)?;
                 let color_b: Color = lua.from_value(color_b)?;
 
-                ffi::ImageColorReplace(&mut this.0, color_a.into(), color_b.into());
+                ImageColorReplace(&mut this.0, color_a, color_b);
                 Ok(())
             },
         );
@@ -404,7 +411,7 @@ impl mlua::UserData for Image {
         }
         */
         method.add_method_mut("get_alpha_border", |_: &Lua, this, threshold: f32| unsafe {
-            let value = ffi::GetImageAlphaBorder(this.0, threshold);
+            let value = GetImageAlphaBorder(this.0, threshold);
             Ok((value.x, value.y, value.width, value.height))
         });
 
@@ -418,7 +425,7 @@ impl mlua::UserData for Image {
         method.add_method_mut("get_color", |lua: &Lua, this, point: LuaValue| unsafe {
             let point: Vector2 = lua.from_value(point)?;
 
-            let value = ffi::GetImageColor(this.0, point.x as i32, point.y as i32);
+            let value = GetImageColor(this.0, point.x as i32, point.y as i32);
             Ok((value.r, value.g, value.b, value.a))
         });
 
@@ -433,7 +440,7 @@ impl mlua::UserData for Image {
             let point: Vector2 = lua.from_value(point)?;
             let color: Color = lua.from_value(color)?;
 
-            ffi::ImageDrawPixelV(&mut this.0, point.into(), color.into());
+            ImageDrawPixelV(&mut this.0, point, color);
             Ok(())
         });
 
@@ -451,13 +458,7 @@ impl mlua::UserData for Image {
                 let point_b: Vector2 = lua.from_value(point_b)?;
                 let color: Color = lua.from_value(color)?;
 
-                ffi::ImageDrawLineEx(
-                    &mut this.0,
-                    point_a.into(),
-                    point_b.into(),
-                    thickness,
-                    color.into(),
-                );
+                ImageDrawLineEx(&mut this.0, point_a, point_b, thickness, color);
                 Ok(())
             },
         );
@@ -475,7 +476,7 @@ impl mlua::UserData for Image {
                 let point: Vector2 = lua.from_value(point)?;
                 let color: Color = lua.from_value(color)?;
 
-                ffi::ImageDrawCircleV(&mut this.0, point.into(), radius, color.into());
+                ImageDrawCircleV(&mut this.0, point, radius, color);
                 Ok(())
             },
         );
@@ -493,7 +494,7 @@ impl mlua::UserData for Image {
                 let point: Vector2 = lua.from_value(point)?;
                 let color: Color = lua.from_value(color)?;
 
-                ffi::ImageDrawCircleLinesV(&mut this.0, point.into(), radius, color.into());
+                ImageDrawCircleLinesV(&mut this.0, point, radius, color);
                 Ok(())
             },
         );
@@ -509,7 +510,7 @@ impl mlua::UserData for Image {
             let box_a: Rectangle = lua.from_value(box_a)?;
             let color: Color = lua.from_value(color)?;
 
-            ffi::ImageDrawRectangleRec(&mut this.0, box_a.into(), color.into());
+            ImageDrawRectangleRec(&mut this.0, box_a, color);
             Ok(())
         });
 
@@ -526,7 +527,7 @@ impl mlua::UserData for Image {
                 let box_a: Rectangle = lua.from_value(box_a)?;
                 let color: Color = lua.from_value(color)?;
 
-                ffi::ImageDrawRectangleLines(&mut this.0, box_a.into(), thickness, color.into());
+                ImageDrawRectangleLines(&mut this.0, box_a, thickness, color);
                 Ok(())
             },
         );
@@ -548,14 +549,14 @@ impl mlua::UserData for Image {
                 let color_b: Color = lua.from_value(color_b)?;
                 let color_c: Color = lua.from_value(color_c)?;
 
-                ffi::ImageDrawTriangleEx(
+                ImageDrawTriangleEx(
                     &mut this.0,
-                    point_a.into(),
-                    point_b.into(),
-                    point_c.into(),
-                    color_a.into(),
-                    color_b.into(),
-                    color_c.into(),
+                    point_a,
+                    point_b,
+                    point_c,
+                    color_a,
+                    color_b,
+                    color_c,
                 );
                 Ok(())
             },
@@ -576,13 +577,7 @@ impl mlua::UserData for Image {
                 let point_c: Vector2 = lua.from_value(point_c)?;
                 let color_a: Color = lua.from_value(color_a)?;
 
-                ffi::ImageDrawTriangleLines(
-                    &mut this.0,
-                    point_a.into(),
-                    point_b.into(),
-                    point_c.into(),
-                    color_a.into(),
-                );
+                ImageDrawTriangleLines(&mut this.0, point_a, point_b, point_c, color_a);
                 Ok(())
             },
         );
@@ -591,7 +586,7 @@ impl mlua::UserData for Image {
     }
 }
 
-impl Image {
+impl LuaImage {
     /* entry
     {
         "version": "1.0.0",
@@ -601,7 +596,7 @@ impl Image {
             { "name": "path", "info": "Path to image file.", "kind": "string" }
         ],
         "result": [
-            { "name": "image", "info": "Image resource.", "kind": "image" }
+            { "name": "image", "info": "LuaImage resource.", "kind": "image" }
         ],
         "routine": true
     }
@@ -611,13 +606,13 @@ impl Image {
         let name = Script::rust_to_c_string(&name)?;
 
         tokio::task::spawn_blocking(move || unsafe {
-            let data = ffi::LoadImage(name.as_ptr());
+            let data = LoadImage(name.as_ptr());
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
-                    "Image::new(): Could not load file \"{path}\"."
+                    "LuaImage::new(): Could not load file \"{path}\"."
                 )))
             }
         })
@@ -635,7 +630,7 @@ impl Image {
             { "name": "kind", "info": "The kind of image file (.png, etc.).", "kind": "string" }
         ],
         "result": [
-            { "name": "image", "info": "Image resource.", "kind": "image" }
+            { "name": "image", "info": "LuaImage resource.", "kind": "image" }
         ],
         "routine": true
     }
@@ -647,13 +642,13 @@ impl Image {
             let data = &*data.0;
             let kind = Script::rust_to_c_string(&kind)?;
 
-            let data = ffi::LoadImageFromMemory(kind.as_ptr(), data.as_ptr(), data.len() as i32);
+            let data = LoadImageFromMemory(kind.as_ptr(), data.as_ptr(), data.len() as i32);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_from_memory(): Could not load file.".to_string(),
+                    "LuaImage::new_from_memory(): Could not load file.".to_string(),
                 ))
             }
         }
@@ -665,20 +660,20 @@ impl Image {
         "name": "alicia.image.new_from_screen",
         "info": "Create a new image resource, from the current screen buffer.",
         "result": [
-            { "name": "image", "info": "Image resource.", "kind": "image" }
+            { "name": "image", "info": "LuaImage resource.", "kind": "image" }
         ],
         "routine": true
     }
     */
     fn new_from_screen(_: &Lua, _: ()) -> mlua::Result<Self> {
         unsafe {
-            let data = ffi::LoadImageFromScreen();
+            let data = LoadImageFromScreen();
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_from_screen(): Could not create image.".to_string(),
+                    "LuaImage::new_from_screen(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -697,13 +692,13 @@ impl Image {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            let data = ffi::GenImageColor(shape.x as i32, shape.y as i32, color.into());
+            let data = GenImageColor(shape.x as i32, shape.y as i32, color);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_color(): Could not create image.".to_string(),
+                    "LuaImage::new_color(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -726,19 +721,14 @@ impl Image {
         let color_b: Color = lua.from_value(color_b)?;
 
         unsafe {
-            let data = ffi::GenImageGradientLinear(
-                shape.x as i32,
-                shape.y as i32,
-                direction,
-                color_a.into(),
-                color_b.into(),
-            );
+            let data =
+                GenImageGradientLinear(shape.x as i32, shape.y as i32, direction, color_a, color_b);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_gradient_linear(): Could not create image.".to_string(),
+                    "LuaImage::new_gradient_linear(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -761,19 +751,14 @@ impl Image {
         let color_b: Color = lua.from_value(color_b)?;
 
         unsafe {
-            let data = ffi::GenImageGradientRadial(
-                shape.x as i32,
-                shape.y as i32,
-                density,
-                color_a.into(),
-                color_b.into(),
-            );
+            let data =
+                GenImageGradientRadial(shape.x as i32, shape.y as i32, density, color_a, color_b);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_gradient_radial(): Could not create image.".to_string(),
+                    "LuaImage::new_gradient_radial(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -796,19 +781,14 @@ impl Image {
         let color_b: Color = lua.from_value(color_b)?;
 
         unsafe {
-            let data = ffi::GenImageGradientSquare(
-                shape.x as i32,
-                shape.y as i32,
-                density,
-                color_a.into(),
-                color_b.into(),
-            );
+            let data =
+                GenImageGradientSquare(shape.x as i32, shape.y as i32, density, color_a, color_b);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_gradient_square(): Could not create image.".to_string(),
+                    "LuaImage::new_gradient_square(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -832,20 +812,20 @@ impl Image {
         let color_b: Color = lua.from_value(color_b)?;
 
         unsafe {
-            let data = ffi::GenImageChecked(
+            let data = GenImageChecked(
                 shape.x as i32,
                 shape.y as i32,
                 check.x as i32,
                 check.y as i32,
-                color_a.into(),
-                color_b.into(),
+                color_a,
+                color_b,
             );
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_check(): Could not create image.".to_string(),
+                    "LuaImage::new_check(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -863,13 +843,13 @@ impl Image {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let data = ffi::GenImageWhiteNoise(shape.x as i32, shape.y as i32, factor);
+            let data = GenImageWhiteNoise(shape.x as i32, shape.y as i32, factor);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_white_noise(): Could not create image.".to_string(),
+                    "LuaImage::new_white_noise(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -891,7 +871,7 @@ impl Image {
         let shift: Vector2 = lua.from_value(shift)?;
 
         unsafe {
-            let data = ffi::GenImagePerlinNoise(
+            let data = GenImagePerlinNoise(
                 shape.x as i32,
                 shape.y as i32,
                 shift.x as i32,
@@ -899,11 +879,11 @@ impl Image {
                 scale,
             );
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_perlin_noise(): Could not create image.".to_string(),
+                    "LuaImage::new_perlin_noise(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -921,13 +901,13 @@ impl Image {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let data = ffi::GenImageCellular(shape.x as i32, shape.y as i32, tile_size);
+            let data = GenImageCellular(shape.x as i32, shape.y as i32, tile_size);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_cellular(): Could not create image.".to_string(),
+                    "LuaImage::new_cellular(): Could not create image.".to_string(),
                 ))
             }
         }
@@ -945,41 +925,33 @@ impl Image {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let data = ffi::GenImageText(
+            let data = GenImageText(
                 shape.x as i32,
                 shape.y as i32,
                 Script::rust_to_c_string(&text)?.as_ptr(),
             );
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_text(): Could not create image.".to_string(),
+                    "LuaImage::new_text(): Could not create image.".to_string(),
                 ))
             }
         }
     }
 
-    pub fn new_from_texture(texture: ffi::Texture) -> mlua::Result<Self> {
+    pub fn new_from_texture(texture: Texture) -> mlua::Result<Self> {
         unsafe {
-            let data = ffi::LoadImageFromTexture(texture);
+            let data = LoadImageFromTexture(texture);
 
-            if ffi::IsImageValid(data) {
+            if IsImageValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Image::new_from_texture(): Could not load file.".to_string(),
+                    "LuaImage::new_from_texture(): Could not load file.".to_string(),
                 ))
             }
-        }
-    }
-}
-
-impl Drop for Image {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::UnloadImage(self.0);
         }
     }
 }

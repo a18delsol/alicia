@@ -53,9 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
-use std::ffi::CStr;
 
 //================================================================
 
@@ -162,7 +161,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 */
 fn set_exit_key(_: &Lua, value: i32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetExitKey(value);
+        SetExitKey(value);
         Ok(())
     }
 }
@@ -182,7 +181,7 @@ fn set_clipboard_text(_: &Lua, text: String) -> mlua::Result<()> {
     let text = Script::rust_to_c_string(&text)?;
 
     unsafe {
-        ffi::SetClipboardText(text.as_ptr());
+        SetClipboardText(text.as_ptr());
         Ok(())
     }
 }
@@ -200,7 +199,7 @@ fn set_clipboard_text(_: &Lua, text: String) -> mlua::Result<()> {
 */
 fn get_clipboard_text(_: &Lua, _: ()) -> mlua::Result<String> {
     unsafe {
-        let name = ffi::GetClipboardText();
+        let name = GetClipboardText();
         Script::c_to_rust_string(name)
     }
 }
@@ -216,7 +215,7 @@ fn get_clipboard_text(_: &Lua, _: ()) -> mlua::Result<String> {
 }
 */
 fn get_board_key_code_queue(_: &Lua, _: ()) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetKeyPressed()) }
+    unsafe { Ok(GetKeyPressed()) }
 }
 
 /* entry
@@ -230,7 +229,7 @@ fn get_board_key_code_queue(_: &Lua, _: ()) -> mlua::Result<i32> {
 }
 */
 fn get_board_uni_code_queue(_: &Lua, _: ()) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetCharPressed()) }
+    unsafe { Ok(GetCharPressed()) }
 }
 
 /* entry
@@ -249,7 +248,7 @@ fn get_board_uni_code_queue(_: &Lua, _: ()) -> mlua::Result<i32> {
 */
 fn get_board_name(_: &Lua, value: i32) -> mlua::Result<String> {
     unsafe {
-        let name = ffi::GetKeyName(value);
+        let name = GetKeyName(value);
 
         if name.is_null() {
             Err(mlua::Error::runtime("get_board_name(): Unknown key code."))
@@ -270,7 +269,7 @@ fn get_board_name(_: &Lua, value: i32) -> mlua::Result<String> {
 }
 */
 fn get_board_up(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsKeyUp(value)) }
+    unsafe { Ok(IsKeyUp(value)) }
 }
 
 /* entry
@@ -284,7 +283,7 @@ fn get_board_up(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_board_down(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsKeyDown(value)) }
+    unsafe { Ok(IsKeyDown(value)) }
 }
 
 /* entry
@@ -298,7 +297,7 @@ fn get_board_down(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_board_press(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsKeyPressed(value)) }
+    unsafe { Ok(IsKeyPressed(value)) }
 }
 
 /* entry
@@ -312,7 +311,7 @@ fn get_board_press(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_board_press_repeat(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsKeyPressedRepeat(value)) }
+    unsafe { Ok(IsKeyPressedRepeat(value)) }
 }
 
 /* entry
@@ -326,7 +325,7 @@ fn get_board_press_repeat(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_board_release(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsKeyReleased(value)) }
+    unsafe { Ok(IsKeyReleased(value)) }
 }
 
 //================================================================
@@ -344,10 +343,10 @@ fn get_board_release(_: &Lua, value: i32) -> mlua::Result<bool> {
 fn set_mouse_active(_: &Lua, value: bool) -> mlua::Result<()> {
     unsafe {
         if value {
-            ffi::EnableCursor();
+            EnableCursor();
             Ok(())
         } else {
-            ffi::DisableCursor();
+            DisableCursor();
             Ok(())
         }
     }
@@ -366,10 +365,10 @@ fn set_mouse_active(_: &Lua, value: bool) -> mlua::Result<()> {
 fn set_mouse_hidden(_: &Lua, value: bool) -> mlua::Result<()> {
     unsafe {
         if value {
-            ffi::HideCursor();
+            HideCursor();
             Ok(())
         } else {
-            ffi::ShowCursor();
+            ShowCursor();
             Ok(())
         }
     }
@@ -386,7 +385,7 @@ fn set_mouse_hidden(_: &Lua, value: bool) -> mlua::Result<()> {
 }
 */
 fn get_mouse_hidden(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsCursorHidden()) }
+    unsafe { Ok(IsCursorHidden()) }
 }
 
 /* entry
@@ -400,7 +399,7 @@ fn get_mouse_hidden(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_mouse_screen(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsCursorOnScreen()) }
+    unsafe { Ok(IsCursorOnScreen()) }
 }
 
 /* entry
@@ -416,7 +415,7 @@ fn get_mouse_screen(_: &Lua, _: ()) -> mlua::Result<bool> {
 */
 fn get_mouse_point(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
     unsafe {
-        let value = ffi::GetMousePosition();
+        let value = GetMousePosition();
         Ok((value.x, value.y))
     }
 }
@@ -434,7 +433,7 @@ fn get_mouse_point(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
 fn set_mouse_point(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
     unsafe {
         let point: Vector2 = lua.from_value(point)?;
-        ffi::SetMousePosition(point.x as i32, point.y as i32);
+        SetMousePosition(point.x as i32, point.y as i32);
         Ok(())
     }
 }
@@ -452,7 +451,7 @@ fn set_mouse_point(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
 */
 fn get_mouse_delta(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
     unsafe {
-        let value = ffi::GetMouseDelta();
+        let value = GetMouseDelta();
         Ok((value.x, value.y))
     }
 }
@@ -470,7 +469,7 @@ fn get_mouse_delta(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
 fn set_mouse_shift(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
     unsafe {
         let point: Vector2 = lua.from_value(point)?;
-        ffi::SetMouseOffset(point.x as i32, point.y as i32);
+        SetMouseOffset(point.x as i32, point.y as i32);
         Ok(())
     }
 }
@@ -488,7 +487,7 @@ fn set_mouse_shift(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
 fn set_mouse_scale(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
     unsafe {
         let point: Vector2 = lua.from_value(point)?;
-        ffi::SetMouseScale(point.x, point.y);
+        SetMouseScale(point.x, point.y);
         Ok(())
     }
 }
@@ -505,7 +504,7 @@ fn set_mouse_scale(lua: &Lua, point: LuaValue) -> mlua::Result<()> {
 */
 fn set_mouse_cursor(_: &Lua, value: i32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetMouseCursor(value);
+        SetMouseCursor(value);
         Ok(())
     }
 }
@@ -523,7 +522,7 @@ fn set_mouse_cursor(_: &Lua, value: i32) -> mlua::Result<()> {
 */
 fn get_mouse_wheel(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
     unsafe {
-        let value = ffi::GetMouseWheelMoveV();
+        let value = GetMouseWheelMoveV();
         Ok((value.x, value.y))
     }
 }
@@ -541,7 +540,7 @@ fn get_mouse_wheel(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
 fn get_mouse_queue(_: &Lua, _: ()) -> mlua::Result<bool> {
     unsafe {
         for x in 0..7 {
-            let value = ffi::IsMouseButtonPressed(x);
+            let value = IsMouseButtonPressed(x);
 
             if value {
                 return Ok(value);
@@ -563,7 +562,7 @@ fn get_mouse_queue(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_mouse_up(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsMouseButtonUp(value)) }
+    unsafe { Ok(IsMouseButtonUp(value)) }
 }
 
 /* entry
@@ -577,7 +576,7 @@ fn get_mouse_up(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_mouse_down(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsMouseButtonDown(value)) }
+    unsafe { Ok(IsMouseButtonDown(value)) }
 }
 
 /* entry
@@ -591,7 +590,7 @@ fn get_mouse_down(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_mouse_press(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsMouseButtonPressed(value)) }
+    unsafe { Ok(IsMouseButtonPressed(value)) }
 }
 
 /* entry
@@ -605,7 +604,7 @@ fn get_mouse_press(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_mouse_release(_: &Lua, value: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsMouseButtonReleased(value)) }
+    unsafe { Ok(IsMouseButtonReleased(value)) }
 }
 
 //================================================================
@@ -624,7 +623,7 @@ fn get_mouse_release(_: &Lua, value: i32) -> mlua::Result<bool> {
 }
 */
 fn get_pad_state(_: &Lua, index: i32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsGamepadAvailable(index)) }
+    unsafe { Ok(IsGamepadAvailable(index)) }
 }
 
 /* entry
@@ -642,11 +641,8 @@ fn get_pad_state(_: &Lua, index: i32) -> mlua::Result<bool> {
 */
 fn get_pad_name(_: &Lua, index: i32) -> mlua::Result<String> {
     unsafe {
-        let name = ffi::GetGamepadName(index);
-        Ok(CStr::from_ptr(name)
-            .to_str()
-            .map_err(|e| mlua::Error::runtime(e.to_string()))?
-            .to_string())
+        let name = GetGamepadName(index);
+        Script::c_to_rust_string(name)
     }
 }
 
@@ -661,7 +657,7 @@ fn get_pad_name(_: &Lua, index: i32) -> mlua::Result<String> {
 }
 */
 fn get_pad_press(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsGamepadButtonPressed(index, value)) }
+    unsafe { Ok(IsGamepadButtonPressed(index, value)) }
 }
 
 /* entry
@@ -675,7 +671,7 @@ fn get_pad_press(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
 }
 */
 fn get_pad_down(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsGamepadButtonDown(index, value)) }
+    unsafe { Ok(IsGamepadButtonDown(index, value)) }
 }
 
 /* entry
@@ -689,7 +685,7 @@ fn get_pad_down(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
 }
 */
 fn get_pad_release(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsGamepadButtonReleased(index, value)) }
+    unsafe { Ok(IsGamepadButtonReleased(index, value)) }
 }
 
 /* entry
@@ -703,7 +699,7 @@ fn get_pad_release(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
 }
 */
 fn get_pad_up(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsGamepadButtonUp(index, value)) }
+    unsafe { Ok(IsGamepadButtonUp(index, value)) }
 }
 
 /* entry
@@ -717,7 +713,7 @@ fn get_pad_up(_: &Lua, (index, value): (i32, i32)) -> mlua::Result<bool> {
 }
 */
 fn get_pad_queue(_: &Lua, _: ()) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetGamepadButtonPressed()) }
+    unsafe { Ok(GetGamepadButtonPressed()) }
 }
 
 /* entry
@@ -734,7 +730,7 @@ fn get_pad_queue(_: &Lua, _: ()) -> mlua::Result<i32> {
 }
 */
 fn get_pad_axis_count(_: &Lua, index: i32) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetGamepadAxisCount(index)) }
+    unsafe { Ok(GetGamepadAxisCount(index)) }
 }
 
 /* entry
@@ -752,7 +748,7 @@ fn get_pad_axis_count(_: &Lua, index: i32) -> mlua::Result<i32> {
 }
 */
 fn get_pad_axis_state(_: &Lua, (index, axis): (i32, i32)) -> mlua::Result<f32> {
-    unsafe { Ok(ffi::GetGamepadAxisMovement(index, axis)) }
+    unsafe { Ok(GetGamepadAxisMovement(index, axis)) }
 }
 
 /* entry
@@ -773,7 +769,7 @@ fn set_pad_rumble(
     (index, motor_a, motor_b, duration): (i32, f32, f32, f32),
 ) -> mlua::Result<()> {
     unsafe {
-        ffi::SetGamepadVibration(index, motor_a, motor_b, duration);
+        SetGamepadVibration(index, motor_a, motor_b, duration);
         Ok(())
     }
 }

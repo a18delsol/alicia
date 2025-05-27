@@ -54,8 +54,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -97,7 +97,7 @@ fn clear(lua: &Lua, color: LuaValue) -> mlua::Result<()> {
     let value: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::ClearBackground(value.into());
+        ClearBackground(value);
         Ok(())
     }
 }
@@ -118,11 +118,11 @@ fn begin(
     (call, variadic): (mlua::Function, mlua::Variadic<LuaValue>),
 ) -> mlua::Result<()> {
     unsafe {
-        ffi::BeginDrawing();
+        BeginDrawing();
 
         let call = call.call::<()>(variadic);
 
-        ffi::EndDrawing();
+        EndDrawing();
 
         call?;
 
@@ -148,11 +148,11 @@ fn begin_blend(
     (call, mode, variadic): (mlua::Function, i32, mlua::Variadic<LuaValue>),
 ) -> mlua::Result<()> {
     unsafe {
-        ffi::BeginBlendMode(mode);
+        BeginBlendMode(mode);
 
         let call = call.call::<()>(variadic);
 
-        ffi::EndBlendMode();
+        EndBlendMode();
 
         call?;
 
@@ -179,7 +179,7 @@ fn begin_scissor(
     let view: Rectangle = lua.from_value(view)?;
 
     unsafe {
-        ffi::BeginScissorMode(
+        BeginScissorMode(
             view.x as i32,
             view.y as i32,
             view.width as i32,
@@ -188,7 +188,7 @@ fn begin_scissor(
 
         let call = call.call::<()>(variadic);
 
-        ffi::EndScissorMode();
+        EndScissorMode();
 
         call?;
 
@@ -248,14 +248,14 @@ mod draw_3d {
         lua: &Lua,
         (call, camera, variadic): (mlua::Function, LuaValue, mlua::Variadic<LuaValue>),
     ) -> mlua::Result<()> {
-        let value: general::Camera3D = lua.from_value(camera)?;
+        let value: Camera3D = lua.from_value(camera)?;
 
         unsafe {
-            ffi::BeginMode3D(value.into());
+            BeginMode3D(value);
 
             let call = call.call::<()>(variadic);
 
-            ffi::EndMode3D();
+            EndMode3D();
 
             call?;
 
@@ -287,17 +287,12 @@ mod draw_3d {
         lua: &Lua,
         (camera, point, shape): (LuaValue, LuaValue, LuaValue),
     ) -> mlua::Result<(f32, f32, f32, f32, f32, f32)> {
-        let camera: general::Camera3D = lua.from_value(camera)?;
+        let camera: Camera3D = lua.from_value(camera)?;
         let point: Vector2 = lua.from_value(point)?;
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let ray = ffi::GetScreenToWorldRayEx(
-                point.into(),
-                camera.into(),
-                shape.x as i32,
-                shape.y as i32,
-            );
+            let ray = GetScreenToWorldRayEx(point, camera, shape.x as i32, shape.y as i32);
 
             Ok((
                 ray.position.x,
@@ -330,17 +325,12 @@ mod draw_3d {
         lua: &Lua,
         (camera, point, shape): (LuaValue, LuaValue, LuaValue),
     ) -> mlua::Result<(f32, f32)> {
-        let camera: general::Camera3D = lua.from_value(camera)?;
+        let camera: Camera3D = lua.from_value(camera)?;
         let point: Vector3 = lua.from_value(point)?;
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let point = ffi::GetWorldToScreenEx(
-                point.into(),
-                camera.into(),
-                shape.x as i32,
-                shape.y as i32,
-            );
+            let point = GetWorldToScreenEx(point, camera, shape.x as i32, shape.y as i32);
 
             Ok((point.x, point.y))
         }
@@ -366,7 +356,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawLine3D(point_a.into(), point_b.into(), color.into());
+            DrawLine3D(point_a, point_b, color);
             Ok(())
         }
     }
@@ -382,7 +372,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawPoint3D(point.into(), color.into());
+            DrawPoint3D(point, color);
             Ok(())
         }
     }
@@ -402,7 +392,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCircle3D(point.into(), radius, axis.into(), angle, color.into());
+            DrawCircle3D(point, radius, axis, angle, color);
             Ok(())
         }
     }
@@ -423,7 +413,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawTriangle3D(point_a.into(), point_b.into(), point_c.into(), color.into());
+            DrawTriangle3D(point_a, point_b, point_c, color);
             Ok(())
         }
     }
@@ -437,10 +427,9 @@ mod draw_3d {
     fn draw_triangle_strip(lua: &Lua, (point, color): (LuaValue, LuaValue)) -> mlua::Result<()> {
         let point: Vec<Vector3> = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
-        let point: Vec<ffi::Vector3> = point.iter().map(|x| x.into()).collect();
 
         unsafe {
-            ffi::DrawTriangleStrip3D(point.as_ptr(), point.len() as i32, color.into());
+            DrawTriangleStrip3D(point.as_ptr(), point.len() as i32, color);
             Ok(())
         }
     }
@@ -465,7 +454,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCubeV(point.into(), shape.into(), color.into());
+            DrawCubeV(point, shape, color);
             Ok(())
         }
     }
@@ -490,7 +479,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCubeWiresV(point.into(), shape.into(), color.into());
+            DrawCubeWiresV(point, shape, color);
             Ok(())
         }
     }
@@ -509,7 +498,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawSphereEx(point.into(), radius, ring, slice, color.into());
+            DrawSphereEx(point, radius, ring, slice, color);
             Ok(())
         }
     }
@@ -528,7 +517,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawSphereWires(point.into(), radius, ring, slice, color.into());
+            DrawSphereWires(point, radius, ring, slice, color);
             Ok(())
         }
     }
@@ -555,14 +544,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCylinderEx(
-                point_a.into(),
-                point_b.into(),
-                radius_a,
-                radius_b,
-                count,
-                color.into(),
-            );
+            DrawCylinderEx(point_a, point_b, radius_a, radius_b, count, color);
             Ok(())
         }
     }
@@ -589,14 +571,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCylinderWiresEx(
-                point_a.into(),
-                point_b.into(),
-                radius_a,
-                radius_b,
-                count,
-                color.into(),
-            );
+            DrawCylinderWiresEx(point_a, point_b, radius_a, radius_b, count, color);
             Ok(())
         }
     }
@@ -623,14 +598,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCapsule(
-                point_a.into(),
-                point_b.into(),
-                radius,
-                slice,
-                ring,
-                color.into(),
-            );
+            DrawCapsule(point_a, point_b, radius, slice, ring, color);
             Ok(())
         }
     }
@@ -657,14 +625,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCapsule(
-                point_a.into(),
-                point_b.into(),
-                radius,
-                slice,
-                ring,
-                color.into(),
-            );
+            DrawCapsule(point_a, point_b, radius, slice, ring, color);
             Ok(())
         }
     }
@@ -684,7 +645,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawPlane(point.into(), shape.into(), color.into());
+            DrawPlane(point, shape, color);
             Ok(())
         }
     }
@@ -704,7 +665,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRay(ray.into(), color.into());
+            DrawRay(ray, color);
             Ok(())
         }
     }
@@ -721,7 +682,7 @@ mod draw_3d {
     */
     fn draw_grid(_: &Lua, (slice, space): (i32, f32)) -> mlua::Result<()> {
         unsafe {
-            ffi::DrawGrid(slice, space);
+            DrawGrid(slice, space);
             Ok(())
         }
     }
@@ -741,7 +702,7 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawBoundingBox(box_3.into(), color.into());
+            DrawBoundingBox(box_3, color);
             Ok(())
         }
     }
@@ -816,14 +777,14 @@ mod draw_2d {
         lua: &Lua,
         (call, camera, variadic): (mlua::Function, LuaValue, mlua::Variadic<LuaValue>),
     ) -> mlua::Result<()> {
-        let value: general::Camera2D = lua.from_value(camera)?;
+        let value: Camera2D = lua.from_value(camera)?;
 
         unsafe {
-            ffi::BeginMode2D(value.into());
+            BeginMode2D(value);
 
             let call = call.call::<()>(variadic);
 
-            ffi::EndMode2D();
+            EndMode2D();
 
             call?;
 
@@ -850,11 +811,11 @@ mod draw_2d {
         lua: &Lua,
         (camera, point): (LuaValue, LuaValue),
     ) -> mlua::Result<(f32, f32)> {
-        let camera: general::Camera2D = lua.from_value(camera)?;
+        let camera: Camera2D = lua.from_value(camera)?;
         let point: Vector2 = lua.from_value(point)?;
 
         unsafe {
-            let point = ffi::GetWorldToScreen2D(point.into(), camera.into());
+            let point = GetWorldToScreen2D(point, camera);
 
             Ok((point.x, point.y))
         }
@@ -879,11 +840,11 @@ mod draw_2d {
         lua: &Lua,
         (camera, point): (LuaValue, LuaValue),
     ) -> mlua::Result<(f32, f32)> {
-        let camera: general::Camera2D = lua.from_value(camera)?;
+        let camera: Camera2D = lua.from_value(camera)?;
         let point: Vector2 = lua.from_value(point)?;
 
         unsafe {
-            let point = ffi::GetScreenToWorld2D(point.into(), camera.into());
+            let point = GetScreenToWorld2D(point, camera);
 
             Ok((point.x, point.y))
         }
@@ -905,7 +866,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawPixelV(point.into(), color.into());
+            DrawPixelV(point, color);
             Ok(())
         }
     }
@@ -932,7 +893,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawLineEx(point_a.into(), point_b.into(), thick, color.into());
+            DrawLineEx(point_a, point_b, thick, color);
             Ok(())
         }
     }
@@ -948,10 +909,8 @@ mod draw_2d {
         let point: Vec<Vector2> = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
 
-        let point: Vec<ffi::Vector2> = point.iter().map(|x| x.into()).collect();
-
         unsafe {
-            ffi::DrawLineStrip(point.as_ptr(), point.len() as i32, color.into());
+            DrawLineStrip(point.as_ptr(), point.len() as i32, color);
             Ok(())
         }
     }
@@ -972,7 +931,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawLineBezier(point_a.into(), point_b.into(), thickness, color.into());
+            DrawLineBezier(point_a, point_b, thickness, color);
             Ok(())
         }
     }
@@ -997,7 +956,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCircleV(point.into(), radius, color.into());
+            DrawCircleV(point, radius, color);
             Ok(())
         }
     }
@@ -1017,7 +976,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCircleLinesV(point.into(), radius, color.into());
+            DrawCircleLinesV(point, radius, color);
             Ok(())
         }
     }
@@ -1052,13 +1011,13 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCircleSector(
-                point.into(),
+            DrawCircleSector(
+                point,
                 radius,
                 begin_angle,
                 close_angle,
                 segment_count,
-                color.into(),
+                color,
             );
             Ok(())
         }
@@ -1079,7 +1038,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawCircleSectorLines(point.into(), radius, angle_a, angle_b, count, color.into());
+            DrawCircleSectorLines(point, radius, angle_a, angle_b, count, color);
             Ok(())
         }
     }
@@ -1100,13 +1059,7 @@ mod draw_2d {
         let color_b: Color = lua.from_value(color_b)?;
 
         unsafe {
-            ffi::DrawCircleGradient(
-                point.x as i32,
-                point.y as i32,
-                radius,
-                color_a.into(),
-                color_b.into(),
-            );
+            DrawCircleGradient(point.x as i32, point.y as i32, radius, color_a, color_b);
             Ok(())
         }
     }
@@ -1127,13 +1080,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawEllipse(
-                point.x as i32,
-                point.y as i32,
-                shape.x,
-                shape.y,
-                color.into(),
-            );
+            DrawEllipse(point.x as i32, point.y as i32, shape.x, shape.y, color);
             Ok(())
         }
     }
@@ -1154,13 +1101,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawEllipseLines(
-                point.x as i32,
-                point.y as i32,
-                shape.x,
-                shape.y,
-                color.into(),
-            );
+            DrawEllipseLines(point.x as i32, point.y as i32, shape.x, shape.y, color);
             Ok(())
         }
     }
@@ -1188,15 +1129,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRing(
-                point.into(),
-                radius_a,
-                radius_b,
-                angle_a,
-                angle_b,
-                count,
-                color.into(),
-            );
+            DrawRing(point, radius_a, radius_b, angle_a, angle_b, count, color);
             Ok(())
         }
     }
@@ -1224,15 +1157,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRing(
-                point.into(),
-                radius_a,
-                radius_b,
-                angle_a,
-                angle_b,
-                count,
-                color.into(),
-            );
+            DrawRing(point, radius_a, radius_b, angle_a, angle_b, count, color);
             Ok(())
         }
     }
@@ -1259,7 +1184,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRectanglePro(shape.into(), point.into(), angle, color.into());
+            DrawRectanglePro(shape, point, angle, color);
             Ok(())
         }
     }
@@ -1295,13 +1220,7 @@ mod draw_2d {
         let color_d: Color = lua.from_value(color_d)?;
 
         unsafe {
-            ffi::DrawRectangleGradientEx(
-                shape.into(),
-                color_a.into(),
-                color_b.into(),
-                color_c.into(),
-                color_d.into(),
-            );
+            DrawRectangleGradientEx(shape, color_a, color_b, color_c, color_d);
             Ok(())
         }
     }
@@ -1326,7 +1245,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRectangleLinesEx(shape.into(), thick, color.into());
+            DrawRectangleLinesEx(shape, thick, color);
             Ok(())
         }
     }
@@ -1352,7 +1271,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRectangleRounded(shape.into(), round, count, color.into());
+            DrawRectangleRounded(shape, round, count, color);
             Ok(())
         }
     }
@@ -1379,7 +1298,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawRectangleRoundedLinesEx(shape.into(), round, count, thick, color.into());
+            DrawRectangleRoundedLinesEx(shape, round, count, thick, color);
             Ok(())
         }
     }
@@ -1407,7 +1326,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawTriangle(point_a.into(), point_b.into(), point_c.into(), color.into());
+            DrawTriangle(point_a, point_b, point_c, color);
             Ok(())
         }
     }
@@ -1435,7 +1354,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            ffi::DrawTriangleLines(point_a.into(), point_b.into(), point_c.into(), color.into());
+            DrawTriangleLines(point_a, point_b, point_c, color);
             Ok(())
         }
     }

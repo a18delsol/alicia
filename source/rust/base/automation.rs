@@ -48,14 +48,13 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-use crate::base::helper::*;
 use crate::script::*;
 use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -66,7 +65,7 @@ use mlua::prelude::*;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let automation = lua.create_table()?;
 
-    automation.set("new", lua.create_function(self::AutomationEvent::new)?)?;
+    automation.set("new", lua.create_function(self::LuaAutomationEventList::new)?)?;
 
     table.set("automation", automation)?;
 
@@ -78,11 +77,19 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 /* class
 { "version": "1.0.0", "name": "automation_event", "info": "An unique handle to an automation event list." }
 */
-struct AutomationEvent(AutomationEventList);
+struct LuaAutomationEventList(AutomationEventList);
 
-unsafe impl Send for AutomationEvent {}
+impl Drop for LuaAutomationEventList {
+    fn drop(&mut self) {
+        unsafe {
+            UnloadAutomationEventList(self.0);
+        }
+    }
+}
 
-impl AutomationEvent {
+unsafe impl Send for LuaAutomationEventList {}
+
+impl LuaAutomationEventList {
     /* entry
     {
         "version": "1.0.0",
@@ -101,22 +108,14 @@ impl AutomationEvent {
                 None => std::ptr::null(),
             };
 
-            let list = ffi::LoadAutomationEventList(path);
+            let list = LoadAutomationEventList(path);
 
             Ok(Self(list))
         }
     }
 }
 
-impl Drop for AutomationEvent {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::UnloadAutomationEventList(self.0);
-        }
-    }
-}
-
-impl mlua::UserData for AutomationEvent {
+impl mlua::UserData for LuaAutomationEventList {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
         field.add_field_method_get("count", |_, this| Ok(this.0.count));
     }
@@ -132,7 +131,7 @@ impl mlua::UserData for AutomationEvent {
         method.add_method_mut("save", |_: &Lua, this, path: String| unsafe {
             let path = Script::rust_to_c_string(&path)?;
 
-            ffi::ExportAutomationEventList(this.0, path.as_ptr());
+            ExportAutomationEventList(this.0, path.as_ptr());
 
             Ok(())
         });
@@ -145,7 +144,7 @@ impl mlua::UserData for AutomationEvent {
         }
         */
         method.add_method_mut("set_active", |_: &Lua, this, _: ()| unsafe {
-            ffi::SetAutomationEventList(&mut this.0);
+            SetAutomationEventList(&mut this.0);
             Ok(())
         });
 
@@ -157,7 +156,7 @@ impl mlua::UserData for AutomationEvent {
         }
         */
         method.add_method("set_frame", |_: &Lua, _, frame: i32| unsafe {
-            ffi::SetAutomationEventBaseFrame(frame);
+            SetAutomationEventBaseFrame(frame);
             Ok(())
         });
 
@@ -169,7 +168,7 @@ impl mlua::UserData for AutomationEvent {
         }
         */
         method.add_method("start", |_: &Lua, _, _: ()| unsafe {
-            ffi::StartAutomationEventRecording();
+            StartAutomationEventRecording();
             Ok(())
         });
 
@@ -181,7 +180,7 @@ impl mlua::UserData for AutomationEvent {
         }
         */
         method.add_method("stop", |_: &Lua, _, _: ()| unsafe {
-            ffi::StopAutomationEventRecording();
+            StopAutomationEventRecording();
             Ok(())
         });
 
@@ -195,7 +194,7 @@ impl mlua::UserData for AutomationEvent {
         method.add_method("play", |_: &Lua, this, frame: u32| unsafe {
             if frame < this.0.count {
                 let event = *this.0.events.wrapping_add(frame as usize);
-                ffi::PlayAutomationEvent(event);
+                PlayAutomationEvent(event);
                 return Ok(());
             }
 

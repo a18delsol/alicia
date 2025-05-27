@@ -48,19 +48,13 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-use crate::base::*;
 use crate::script::*;
 use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
-
-//================================================================
-
-type RLTexture = ffi::Texture2D;
-type RLRenderTexture = ffi::RenderTexture2D;
 
 //================================================================
 
@@ -71,14 +65,14 @@ type RLRenderTexture = ffi::RenderTexture2D;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let texture = lua.create_table()?;
 
-    texture.set("new",             lua.create_function(self::Texture::new)?)?;
-    texture.set("new_from_memory", lua.create_function(self::Texture::new_from_memory)?)?;
+    texture.set("new",             lua.create_function(self::LuaTexture::new)?)?;
+    //texture.set("new_from_memory", lua.create_function(self::LuaTexture::new_from_memory)?)?;
 
     table.set("texture", texture)?;
 
     let render_texture = lua.create_table()?;
 
-    render_texture.set("new", lua.create_function(self::RenderTexture::new)?)?;
+    render_texture.set("new", lua.create_function(self::LuaRenderTexture::new)?)?;
 
     table.set("render_texture", render_texture)?;
 
@@ -87,13 +81,13 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 
 pub fn texture_draw(
     lua: &Lua,
-    (texture, point, angle, scale, color): (&ffi::Texture, LuaValue, f32, f32, LuaValue),
+    (texture, point, angle, scale, color): (Texture, LuaValue, f32, f32, LuaValue),
 ) -> mlua::Result<()> {
     let point: Vector2 = lua.from_value(point)?;
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::DrawTextureEx(*texture, point.into(), angle, scale, color.into());
+        DrawTextureEx(texture, point, angle, scale, color);
         Ok(())
     }
 }
@@ -101,7 +95,7 @@ pub fn texture_draw(
 pub fn texture_pro_draw(
     lua: &Lua,
     (texture, rec_a, rec_b, point, angle, color): (
-        &ffi::Texture,
+        Texture,
         LuaValue,
         LuaValue,
         LuaValue,
@@ -115,28 +109,21 @@ pub fn texture_pro_draw(
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::DrawTexturePro(
-            *texture,
-            rec_a.into(),
-            rec_b.into(),
-            point.into(),
-            angle,
-            color.into(),
-        );
+        DrawTexturePro(texture, rec_a, rec_b, point, angle, color);
         Ok(())
     }
 }
 
 pub fn texture_draw_billboard(
     lua: &Lua,
-    (texture, camera, point, scale, color): (&ffi::Texture, LuaValue, LuaValue, f32, LuaValue),
+    (texture, camera, point, scale, color): (Texture, LuaValue, LuaValue, f32, LuaValue),
 ) -> mlua::Result<()> {
-    let camera: general::Camera3D = lua.from_value(camera)?;
+    let camera: Camera3D = lua.from_value(camera)?;
     let point: Vector3 = lua.from_value(point)?;
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::DrawBillboard(camera.into(), *texture, point.into(), scale, color.into());
+        DrawBillboard(camera, texture, point, scale, color);
         Ok(())
     }
 }
@@ -144,7 +131,7 @@ pub fn texture_draw_billboard(
 pub fn texture_draw_billboard_pro(
     lua: &Lua,
     (texture, camera, source, point, up, scale, origin, angle, color): (
-        &ffi::Texture,
+        Texture,
         LuaValue,
         LuaValue,
         LuaValue,
@@ -155,7 +142,7 @@ pub fn texture_draw_billboard_pro(
         LuaValue,
     ),
 ) -> mlua::Result<()> {
-    let camera: general::Camera3D = lua.from_value(camera)?;
+    let camera: Camera3D = lua.from_value(camera)?;
     let source: Rectangle = lua.from_value(source)?;
     let point: Vector3 = lua.from_value(point)?;
     let up: Vector3 = lua.from_value(up)?;
@@ -164,16 +151,8 @@ pub fn texture_draw_billboard_pro(
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::DrawBillboardPro(
-            camera.into(),
-            *texture,
-            source.into(),
-            point.into(),
-            up.into(),
-            scale.into(),
-            origin.into(),
-            angle,
-            color.into(),
+        DrawBillboardPro(
+            camera, texture, source, point, up, scale, origin, angle, color,
         );
         Ok(())
     }
@@ -182,7 +161,7 @@ pub fn texture_draw_billboard_pro(
 #[rustfmt::skip]
 fn texture_draw_plane(lua: &Lua,
     (texture, source, point_a, point_b, point_c, point_d, color): (
-        &ffi::Texture,
+        Texture,
         LuaValue,
         LuaValue,
         LuaValue,
@@ -198,26 +177,29 @@ fn texture_draw_plane(lua: &Lua,
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        ffi::rlSetTexture(texture.id);
+        // TO-DO port
+        /*
+        rlSetTexture(texture.id);
 
             let tx = source.x;
             let ty = source.y;
             let tw = source.width;
             let th = source.height;
 
-            ffi::rlBegin(ffi::RL_QUADS as i32);
+            rlBegin(RL_QUADS as i32);
 
-                ffi::rlColor4ub(color.r, color.g, color.b, color.a);
+                rlColor4ub(color.r, color.g, color.b, color.a);
 
-                ffi::rlNormal3f(0.0, 1.0, 0.0);
-                ffi::rlTexCoord2f(tx, ty); ffi::rlVertex3f(point_a.x, point_a.y, point_a.z);
-                ffi::rlTexCoord2f(tx, th); ffi::rlVertex3f(point_b.x, point_b.y, point_b.z);
-                ffi::rlTexCoord2f(tw, th); ffi::rlVertex3f(point_c.x, point_c.y, point_c.z);
-                ffi::rlTexCoord2f(tw, ty); ffi::rlVertex3f(point_d.x, point_d.y, point_d.z);
+                rlNormal3f(0.0, 1.0, 0.0);
+                rlTexCoord2f(tx, ty); rlVertex3f(point_a.x, point_a.y, point_a.z);
+                rlTexCoord2f(tx, th); rlVertex3f(point_b.x, point_b.y, point_b.z);
+                rlTexCoord2f(tw, th); rlVertex3f(point_c.x, point_c.y, point_c.z);
+                rlTexCoord2f(tw, ty); rlVertex3f(point_d.x, point_d.y, point_d.z);
 
-            ffi::rlEnd();
+            rlEnd();
 
-        ffi::rlSetTexture(0);
+        rlSetTexture(0);
+        */
 
         Ok(())
     }
@@ -234,9 +216,20 @@ fn texture_draw_plane(lua: &Lua,
     ]
 }
 */
-pub struct Texture(pub RLTexture);
+struct LuaTexture(Texture);
 
-impl mlua::UserData for Texture {
+impl Drop for LuaTexture {
+    fn drop(&mut self) {
+        unsafe {
+            println!("dropping texture");
+            UnloadTexture(self.0);
+        }
+    }
+}
+
+unsafe impl Send for LuaTexture {}
+
+impl mlua::UserData for LuaTexture {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
         field.add_field_method_get("ID", |_: &Lua, this| Ok(this.0.id));
         field.add_field_method_get("shape_x", |_: &Lua, this| Ok(this.0.width));
@@ -252,7 +245,10 @@ impl mlua::UserData for Texture {
         }
         */
         method.add_method_mut("to_image", |_: &Lua, this, _: ()| {
-            crate::base::image::Image::new_from_texture(this.0)
+            // TO-DO port
+            //crate::base::image::Image::new_from_texture(this.0)
+            todo!();
+            Ok(())
         });
 
         /* entry
@@ -264,7 +260,7 @@ impl mlua::UserData for Texture {
         */
         method.add_method_mut("set_mipmap", |_: &Lua, this, _: ()| {
             unsafe {
-                ffi::GenTextureMipmaps(&mut this.0);
+                GenTextureMipmaps(&mut this.0);
             }
             Ok(())
         });
@@ -275,13 +271,13 @@ impl mlua::UserData for Texture {
             "name": "texture:set_filter",
             "info": "Set the filter for a texture.",
             "member": [
-                { "name": "filter", "info": "Texture filter.", "kind": "texture_filter" }
+                { "name": "filter", "info": "LuaTexture filter.", "kind": "texture_filter" }
             ]
         }
         */
         method.add_method_mut("set_filter", |_: &Lua, this, filter: i32| {
             unsafe {
-                ffi::SetTextureFilter(this.0, filter);
+                SetTextureFilter(this.0, filter);
             }
             Ok(())
         });
@@ -292,13 +288,13 @@ impl mlua::UserData for Texture {
             "name": "texture:set_wrap",
             "info": "Set the wrap for a texture.",
             "member": [
-                { "name": "wrap", "info": "Texture wrap.", "kind": "texture_wrap" }
+                { "name": "wrap", "info": "LuaTexture wrap.", "kind": "texture_wrap" }
             ]
         }
         */
         method.add_method_mut("set_wrap", |_: &Lua, this, wrap: i32| {
             unsafe {
-                ffi::SetTextureWrap(this.0, wrap);
+                SetTextureWrap(this.0, wrap);
             }
             Ok(())
         });
@@ -324,7 +320,7 @@ impl mlua::UserData for Texture {
             )| {
                 Ok(texture_draw_plane(
                     lua,
-                    (&this.0, source, point_a, point_b, point_c, point_d, color),
+                    (this.0, source, point_a, point_b, point_c, point_d, color),
                 ))
             },
         );
@@ -345,7 +341,7 @@ impl mlua::UserData for Texture {
         method.add_method(
             "draw",
             |lua: &Lua, this, (point, angle, scale, color): (LuaValue, f32, f32, LuaValue)| {
-                Ok(texture_draw(lua, (&this.0, point, angle, scale, color)))
+                Ok(texture_draw(lua, (this.0, point, angle, scale, color)))
             },
         );
 
@@ -376,7 +372,7 @@ impl mlua::UserData for Texture {
                 )| {
                     Ok(texture_pro_draw(
                         lua,
-                        (&this.0, box_a, box_b, point, angle, color),
+                        (this.0, box_a, box_b, point, angle, color),
                     ))
                 },
             );
@@ -401,7 +397,7 @@ impl mlua::UserData for Texture {
              (camera, point, scale, color): (LuaValue, LuaValue, f32, LuaValue)| {
                 Ok(texture_draw_billboard(
                     lua,
-                    (&this.0, camera, point, scale, color),
+                    (this.0, camera, point, scale, color),
                 ))
             },
         );
@@ -440,7 +436,7 @@ impl mlua::UserData for Texture {
                 Ok(texture_draw_billboard_pro(
                     lua,
                     (
-                        &this.0, camera, source, point, up, scale, origin, angle, color,
+                        this.0, camera, source, point, up, scale, origin, angle, color,
                     ),
                 ))
             },
@@ -448,7 +444,7 @@ impl mlua::UserData for Texture {
     }
 }
 
-impl Texture {
+impl LuaTexture {
     /* entry
     {
         "version": "1.0.0",
@@ -458,7 +454,7 @@ impl Texture {
             { "name": "path", "info": "Path to texture file.", "kind": "string" }
         ],
         "result": [
-            { "name": "texture", "info": "Texture resource.", "kind": "texture" }
+            { "name": "texture", "info": "LuaTexture resource.", "kind": "texture" }
         ]
     }
     */
@@ -466,18 +462,20 @@ impl Texture {
         let name = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
         unsafe {
-            let data = ffi::LoadTexture(name.as_ptr());
+            let data = LoadTexture(name.as_ptr());
 
-            if ffi::IsTextureValid(data) {
+            if IsTextureValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
-                    "Texture::new(): Could not load file \"{path}\"."
+                    "LuaTexture::new(): Could not load file \"{path}\"."
                 )))
             }
         }
     }
 
+    // TO-DO port
+    /*
     /* entry
     {
         "version": "1.0.0",
@@ -489,39 +487,32 @@ impl Texture {
         let image = crate::base::image::Image::new_from_memory(lua, (data, kind))?;
 
         unsafe {
-            let data = ffi::LoadTextureFromImage(image.0);
+            let data = LoadTextureFromImage(image.0);
 
-            if ffi::IsTextureValid(data) {
-                Ok(Self(data))
+            if IsTextureValid(data) {
+                Ok(data)
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Texture::new_from_memory(): Could not load file.".to_string(),
+                    "LuaTexture::new_from_memory(): Could not load file.".to_string(),
                 ))
             }
         }
     }
 
-    pub fn new_from_image(image: ffi::Image) -> mlua::Result<Self> {
+    pub fn new_from_image(image: Image) -> mlua::Result<Self> {
         unsafe {
-            let data = ffi::LoadTextureFromImage(image);
+            let data = LoadTextureFromImage(image);
 
-            if ffi::IsTextureValid(data) {
+            if IsTextureValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Texture::new_from_image(): Could not load file.".to_string(),
+                    "LuaTexture::new_from_image(): Could not load file.".to_string(),
                 ))
             }
         }
     }
-}
-
-impl Drop for Texture {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::UnloadTexture(self.0);
-        }
-    }
+    */
 }
 
 /* class
@@ -535,9 +526,19 @@ impl Drop for Texture {
     ]
 }
 */
-pub struct RenderTexture(pub RLRenderTexture);
+struct LuaRenderTexture(RenderTexture);
 
-impl mlua::UserData for RenderTexture {
+impl Drop for LuaRenderTexture {
+    fn drop(&mut self) {
+        unsafe {
+            UnloadRenderTexture(self.0);
+        }
+    }
+}
+
+unsafe impl Send for LuaRenderTexture {}
+
+impl mlua::UserData for LuaRenderTexture {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
         field.add_field_method_get("ID", |_: &Lua, this| Ok(this.0.texture.id));
         field.add_field_method_get("shape_x", |_: &Lua, this| Ok(this.0.texture.width));
@@ -557,11 +558,11 @@ impl mlua::UserData for RenderTexture {
         */
         method.add_method("begin", |_: &Lua, this, call: mlua::Function| {
             unsafe {
-                ffi::BeginTextureMode(this.0);
+                BeginTextureMode(this.0);
 
                 let call = call.call::<()>(());
 
-                ffi::EndTextureMode();
+                EndTextureMode();
 
                 call?;
             }
@@ -591,7 +592,7 @@ impl mlua::UserData for RenderTexture {
                 Ok(texture_draw_plane(
                     lua,
                     (
-                        &this.0.texture,
+                        this.0.texture,
                         source,
                         point_a,
                         point_b,
@@ -621,7 +622,7 @@ impl mlua::UserData for RenderTexture {
             |lua: &Lua, this, (point, angle, scale, color): (LuaValue, f32, f32, LuaValue)| {
                 Ok(texture_draw(
                     lua,
-                    (&this.0.texture, point, angle, scale, color),
+                    (this.0.texture, point, angle, scale, color),
                 ))
             },
         );
@@ -653,14 +654,14 @@ impl mlua::UserData for RenderTexture {
                 )| {
                     Ok(texture_pro_draw(
                         lua,
-                        (&this.0.texture, box_a, box_b, point, angle, color),
+                        (this.0.texture, box_a, box_b, point, angle, color),
                     ))
                 },
             );
     }
 }
 
-impl RenderTexture {
+impl LuaRenderTexture {
     /* entry
     {
         "version": "1.0.0",
@@ -678,27 +679,19 @@ impl RenderTexture {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let mut data = ffi::LoadRenderTexture(shape.x as i32, shape.y as i32);
+            let mut data = LoadRenderTexture(shape.x as i32, shape.y as i32);
 
-            if ffi::IsRenderTextureValid(data) {
+            if IsRenderTextureValid(data) {
                 // TO-DO expose this as method
-                //ffi::GenTextureMipmaps(&mut data.texture);
-                //ffi::SetTextureFilter(data.texture, TextureFilter::TEXTURE_FILTER_TRILINEAR as i32);
+                //GenTextureMipmaps(&mut data.texture);
+                //SetTextureFilter(data.texture, TextureFilter::TEXTURE_FILTER_TRILINEAR as i32);
 
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "RenderTexture::new(): Could not load render texture.".to_string(),
+                    "LuaRenderTexture::new(): Could not load render texture.".to_string(),
                 ))
             }
-        }
-    }
-}
-
-impl Drop for RenderTexture {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::UnloadRenderTexture(self.0);
         }
     }
 }
