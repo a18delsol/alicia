@@ -99,7 +99,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
     ]
 }
 */
-struct LuaImage(Image);
+pub struct LuaImage(pub Image);
 
 impl Drop for LuaImage {
     fn drop(&mut self) {
@@ -131,8 +131,7 @@ impl mlua::UserData for LuaImage {
         }
         */
         method.add_method_mut("to_texture", |_: &Lua, this, _: ()| {
-            //crate::base::texture::Texture::new_from_image(this)
-            Ok(())
+            Ok(crate::base::texture::LuaTexture::new_from_image(this.0))
         });
 
         /* entry
@@ -839,7 +838,7 @@ impl LuaImage {
         "routine": true
     }
     */
-    pub fn new_white_noise(lua: &Lua, (shape, factor): (LuaValue, f32)) -> mlua::Result<Self> {
+    fn new_white_noise(lua: &Lua, (shape, factor): (LuaValue, f32)) -> mlua::Result<Self> {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
@@ -863,7 +862,7 @@ impl LuaImage {
         "routine": true
     }
     */
-    pub fn new_perlin_noise(
+    fn new_perlin_noise(
         lua: &Lua,
         (shape, shift, scale): (LuaValue, LuaValue, f32),
     ) -> mlua::Result<Self> {
@@ -897,7 +896,7 @@ impl LuaImage {
         "routine": true
     }
     */
-    pub fn new_cellular(lua: &Lua, (shape, tile_size): (LuaValue, i32)) -> mlua::Result<Self> {
+    fn new_cellular(lua: &Lua, (shape, tile_size): (LuaValue, i32)) -> mlua::Result<Self> {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
@@ -921,7 +920,7 @@ impl LuaImage {
         "routine": true
     }
     */
-    pub fn new_text(lua: &Lua, (shape, text): (LuaValue, String)) -> mlua::Result<Self> {
+    fn new_text(lua: &Lua, (shape, text): (LuaValue, String)) -> mlua::Result<Self> {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {

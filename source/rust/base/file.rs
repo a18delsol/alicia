@@ -122,6 +122,7 @@ use notify::{Config, PollWatcher, RecursiveMode, Watcher};
     "info": "TO-DO"
 }
 */
+#[allow(dead_code)]
 pub struct FileWatcher(PollWatcher, JoinHandle<()>, Receiver<notify::Event>);
 
 impl FileWatcher {

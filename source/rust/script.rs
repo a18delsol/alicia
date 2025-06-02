@@ -50,7 +50,6 @@
 
 use crate::base::*;
 use crate::status::*;
-use crate::base::helper::*;
 
 //================================================================
 
@@ -164,7 +163,7 @@ impl Script {
             }
         };
 
-            std::env::set_current_dir(&status_info.path).unwrap();
+        std::env::set_current_dir(&status_info.path).unwrap();
 
         let alicia = Self::set_environment(&lua, status_info)?;
 
@@ -260,29 +259,29 @@ impl Script {
         status_info: &StatusInfo,
         script_info: Option<&ScriptInfo>,
     ) -> mlua::Result<()> {
-        r3d::set_global       (lua, alicia, status_info, script_info)?;
-        general::set_global   (lua, alicia, status_info, script_info)?;
-        window::set_global    (lua, alicia, status_info, script_info)?;
-        draw::set_global      (lua, alicia, status_info, script_info)?;
-        input::set_global     (lua, alicia, status_info, script_info)?;
-        model::set_global     (lua, alicia, status_info, script_info)?;
-        texture::set_global   (lua, alicia, status_info, script_info)?;
-        image::set_global     (lua, alicia, status_info, script_info)?;
-        sound::set_global     (lua, alicia, status_info, script_info)?;
-        music::set_global     (lua, alicia, status_info, script_info)?;
-        font::set_global      (lua, alicia, status_info, script_info)?;
-        shader::set_global    (lua, alicia, status_info, script_info)?;
-        file::set_global      (lua, alicia, status_info, script_info)?;
-        data::set_global      (lua, alicia, status_info, script_info)?;
-        socket::set_global    (lua, alicia, status_info, script_info)?;
-        automation::set_global(lua, alicia, status_info, script_info)?;
-        collision::set_global (lua, alicia, status_info, script_info)?;
+        r3d        ::set_global(lua, alicia, status_info, script_info)?;
+        general    ::set_global(lua, alicia, status_info, script_info)?;
+        window     ::set_global(lua, alicia, status_info, script_info)?;
+        draw       ::set_global(lua, alicia, status_info, script_info)?;
+        input      ::set_global(lua, alicia, status_info, script_info)?;
+        model      ::set_global(lua, alicia, status_info, script_info)?;
+        texture    ::set_global(lua, alicia, status_info, script_info)?;
+        image      ::set_global(lua, alicia, status_info, script_info)?;
+        sound      ::set_global(lua, alicia, status_info, script_info)?;
+        music      ::set_global(lua, alicia, status_info, script_info)?;
+        font       ::set_global(lua, alicia, status_info, script_info)?;
+        shader     ::set_global(lua, alicia, status_info, script_info)?;
+        file       ::set_global(lua, alicia, status_info, script_info)?;
+        data       ::set_global(lua, alicia, status_info, script_info)?;
+        socket     ::set_global(lua, alicia, status_info, script_info)?;
+        automation ::set_global(lua, alicia, status_info, script_info)?;
+        collision  ::set_global(lua, alicia, status_info, script_info)?;
 
-        #[cfg(feature = "rapier3d")] rapier::set_global (lua, alicia, status_info, script_info)?;
-        #[cfg(feature = "zip")]      zip::set_global    (lua, alicia, status_info, script_info)?;
-        #[cfg(feature = "request")]  request::set_global(lua, alicia, status_info, script_info)?;
-        #[cfg(feature = "steam")]    steam::set_global  (lua, alicia, status_info, script_info)?;
-        #[cfg(feature = "discord")]  discord::set_global(lua, alicia, status_info, script_info)?;
+        #[cfg(feature = "rapier3d")] rapier  ::set_global(lua, alicia, status_info, script_info)?;
+        #[cfg(feature = "zip")]      zip     ::set_global(lua, alicia, status_info, script_info)?;
+        #[cfg(feature = "request")]  request ::set_global(lua, alicia, status_info, script_info)?;
+        #[cfg(feature = "steam")]    steam   ::set_global(lua, alicia, status_info, script_info)?;
+        #[cfg(feature = "discord")]  discord ::set_global(lua, alicia, status_info, script_info)?;
 
         Ok(())
     }
@@ -492,25 +491,14 @@ impl ScriptData {
     pub fn get_path(lua: &Lua, path: &str) -> mlua::Result<String> {
         let script_data = lua.app_data_ref::<ScriptData>().unwrap();
 
-        // there's something wrong with this function and returning an incorrect path on start-up
-        // goes into the else condition even if it really shouldn't.
-        return Ok(path.to_string());
-
-        if script_data.status_info.safe {
-            //let path = format!("{}/{path}", script_data.status_info.path);
-
+        if script_data.status_info.safe && !script_data.path_escape {
             // always disallow going up the directory in safe mode.
             let path = path.replace("../", "");
             let path = path.replace("..",  "");
 
-
             Ok(path)
-        } else if script_data.path_escape {
-            
-            Ok(path.to_string())
         } else {
-            
-            Ok(format!("{}/{path}", script_data.status_info.path))
+            Ok(path.to_string())
         }
     }
 

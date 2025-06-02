@@ -66,7 +66,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
     let texture = lua.create_table()?;
 
     texture.set("new",             lua.create_function(self::LuaTexture::new)?)?;
-    //texture.set("new_from_memory", lua.create_function(self::LuaTexture::new_from_memory)?)?;
+    texture.set("new_from_memory", lua.create_function(self::LuaTexture::new_from_memory)?)?;
 
     table.set("texture", texture)?;
 
@@ -79,7 +79,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
     Ok(())
 }
 
-pub fn texture_draw(
+fn texture_draw(
     lua: &Lua,
     (texture, point, angle, scale, color): (Texture, LuaValue, f32, f32, LuaValue),
 ) -> mlua::Result<()> {
@@ -92,7 +92,7 @@ pub fn texture_draw(
     }
 }
 
-pub fn texture_pro_draw(
+fn texture_pro_draw(
     lua: &Lua,
     (texture, rec_a, rec_b, point, angle, color): (
         Texture,
@@ -114,7 +114,7 @@ pub fn texture_pro_draw(
     }
 }
 
-pub fn texture_draw_billboard(
+fn texture_draw_billboard(
     lua: &Lua,
     (texture, camera, point, scale, color): (Texture, LuaValue, LuaValue, f32, LuaValue),
 ) -> mlua::Result<()> {
@@ -128,7 +128,7 @@ pub fn texture_draw_billboard(
     }
 }
 
-pub fn texture_draw_billboard_pro(
+fn texture_draw_billboard_pro(
     lua: &Lua,
     (texture, camera, source, point, up, scale, origin, angle, color): (
         Texture,
@@ -158,6 +158,8 @@ pub fn texture_draw_billboard_pro(
     }
 }
 
+// TO-DO port
+/*
 #[rustfmt::skip]
 fn texture_draw_plane(lua: &Lua,
     (texture, source, point_a, point_b, point_c, point_d, color): (
@@ -177,8 +179,6 @@ fn texture_draw_plane(lua: &Lua,
     let color: Color = lua.from_value(color)?;
 
     unsafe {
-        // TO-DO port
-        /*
         rlSetTexture(texture.id);
 
             let tx = source.x;
@@ -199,11 +199,11 @@ fn texture_draw_plane(lua: &Lua,
             rlEnd();
 
         rlSetTexture(0);
-        */
 
         Ok(())
     }
 }
+*/
 
 /* class
 {
@@ -216,12 +216,11 @@ fn texture_draw_plane(lua: &Lua,
     ]
 }
 */
-struct LuaTexture(Texture);
+pub struct LuaTexture(pub Texture);
 
 impl Drop for LuaTexture {
     fn drop(&mut self) {
         unsafe {
-            println!("dropping texture");
             UnloadTexture(self.0);
         }
     }
@@ -245,10 +244,7 @@ impl mlua::UserData for LuaTexture {
         }
         */
         method.add_method_mut("to_image", |_: &Lua, this, _: ()| {
-            // TO-DO port
-            //crate::base::image::Image::new_from_texture(this.0)
-            todo!();
-            Ok(())
+            crate::base::image::LuaImage::new_from_texture(this.0)
         });
 
         /* entry
@@ -258,10 +254,8 @@ impl mlua::UserData for LuaTexture {
             "info": "Set the mipmap for a texture."
         }
         */
-        method.add_method_mut("set_mipmap", |_: &Lua, this, _: ()| {
-            unsafe {
-                GenTextureMipmaps(&mut this.0);
-            }
+        method.add_method_mut("set_mipmap", |_: &Lua, this, _: ()| unsafe {
+            GenTextureMipmaps(&mut this.0);
             Ok(())
         });
 
@@ -275,10 +269,8 @@ impl mlua::UserData for LuaTexture {
             ]
         }
         */
-        method.add_method_mut("set_filter", |_: &Lua, this, filter: i32| {
-            unsafe {
-                SetTextureFilter(this.0, filter);
-            }
+        method.add_method_mut("set_filter", |_: &Lua, this, filter: i32| unsafe {
+            SetTextureFilter(this.0, filter);
             Ok(())
         });
 
@@ -292,13 +284,13 @@ impl mlua::UserData for LuaTexture {
             ]
         }
         */
-        method.add_method_mut("set_wrap", |_: &Lua, this, wrap: i32| {
-            unsafe {
-                SetTextureWrap(this.0, wrap);
-            }
+        method.add_method_mut("set_wrap", |_: &Lua, this, wrap: i32| unsafe {
+            SetTextureWrap(this.0, wrap);
             Ok(())
         });
 
+        // TO-DO
+        /*
         /* entry
         {
             "version": "1.0.0",
@@ -324,6 +316,7 @@ impl mlua::UserData for LuaTexture {
                 ))
             },
         );
+        */
 
         /* entry
         {
@@ -475,7 +468,6 @@ impl LuaTexture {
     }
 
     // TO-DO port
-    /*
     /* entry
     {
         "version": "1.0.0",
@@ -484,13 +476,13 @@ impl LuaTexture {
     }
     */
     fn new_from_memory(lua: &Lua, (data, kind): (LuaValue, String)) -> mlua::Result<Self> {
-        let image = crate::base::image::Image::new_from_memory(lua, (data, kind))?;
+        let image = crate::base::image::LuaImage::new_from_memory(lua, (data, kind))?;
 
         unsafe {
             let data = LoadTextureFromImage(image.0);
 
             if IsTextureValid(data) {
-                Ok(data)
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
                     "LuaTexture::new_from_memory(): Could not load file.".to_string(),
@@ -512,7 +504,6 @@ impl LuaTexture {
             }
         }
     }
-    */
 }
 
 /* class
@@ -570,6 +561,8 @@ impl mlua::UserData for LuaRenderTexture {
             Ok(())
         });
 
+        // TO-DO port
+        /*
         /* entry
         {
             "version": "1.0.0",
@@ -603,6 +596,7 @@ impl mlua::UserData for LuaRenderTexture {
                 ))
             },
         );
+        */
 
         /* entry
         {
@@ -679,7 +673,7 @@ impl LuaRenderTexture {
         let shape: Vector2 = lua.from_value(shape)?;
 
         unsafe {
-            let mut data = LoadRenderTexture(shape.x as i32, shape.y as i32);
+            let data = LoadRenderTexture(shape.x as i32, shape.y as i32);
 
             if IsRenderTextureValid(data) {
                 // TO-DO expose this as method
