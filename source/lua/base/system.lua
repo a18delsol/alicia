@@ -136,8 +136,6 @@ function system:scan(search)
                 local list = pack:get_list()
 
                 for _, search_file in ipairs(list) do
-                    print(search_file)
-
                     self.locate[search_file] = file_entry:new(pack, FILE_KIND.PACK)
                 end
             else
@@ -229,20 +227,14 @@ local function file_system_set_asset(self, memory_data, memory_list, call_new, c
     local asset = self.locate[faux_path]
 
     if asset.kind == FILE_KIND.DISK then
-        print("Loading from disk...")
-
         -- create the asset.
         asset = call_new(asset.path, ...)
     elseif asset.kind == FILE_KIND.PACK then
-        print("Loading from pack...")
-
         local data = asset.path:get_file(faux_path, true)
 
         -- create the asset.
         asset = call_new_memory(data, ...)
     elseif asset.kind == FILE_KIND.EMBED then
-        print("Loading from embed...")
-
         local data = alicia.data.get_embed_file(asset.path, true)
 
         -- create the asset.

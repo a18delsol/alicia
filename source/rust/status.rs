@@ -48,16 +48,14 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+use crate::base::helper::*;
 use crate::script::*;
 use crate::window::*;
 
 //================================================================
 
-use crate::base::helper::*;
-
 #[cfg(feature = "embed")]
 use rust_embed::Embed;
-
 use serde::{Deserialize, Serialize};
 
 //================================================================
@@ -147,6 +145,7 @@ impl Status {
     }
 
     // create a RL context.
+    #[rustfmt::skip]
     pub async fn window(&self) {
         let info = match self {
             Self::Success(script) => &script.info,
@@ -155,17 +154,9 @@ impl Status {
 
         let mut flag: u32 = 0;
 
-        if info.sync {
-            flag |= ConfigFlags_FLAG_VSYNC_HINT as u32;
-        }
-        if info.msaa {
-            flag |= ConfigFlags_FLAG_MSAA_4X_HINT as u32;
-        }
-        if info.scale {
-            flag |= ConfigFlags_FLAG_WINDOW_HIGHDPI as u32;
-        }
-        // hack.
-        flag |= ConfigFlags_FLAG_WINDOW_RESIZABLE;
+        if info.sync  { flag |= ConfigFlags_FLAG_VSYNC_HINT         as u32; }
+        if info.msaa  { flag |= ConfigFlags_FLAG_MSAA_4X_HINT       as u32; }
+        if info.scale { flag |= ConfigFlags_FLAG_WINDOW_HIGHDPI     as u32; }
 
         unsafe {
             SetConfigFlags(flag);
@@ -177,71 +168,44 @@ impl Status {
                 Script::rust_to_c_string(&info.name).unwrap().as_ptr(),
             );
 
+            if info.full       { SetWindowState(ConfigFlags_FLAG_FULLSCREEN_MODE          as u32); }
+            if info.resizable  { SetWindowState(ConfigFlags_FLAG_WINDOW_RESIZABLE         as u32); }
+            if info.no_decor   { SetWindowState(ConfigFlags_FLAG_WINDOW_UNDECORATED       as u32); }
+            if info.hidden     { SetWindowState(ConfigFlags_FLAG_WINDOW_HIDDEN            as u32); }
+            if info.minimize   { SetWindowState(ConfigFlags_FLAG_WINDOW_MINIMIZED         as u32); }
+            if info.maximize   { SetWindowState(ConfigFlags_FLAG_WINDOW_MAXIMIZED         as u32); }
+            if info.no_focus   { SetWindowState(ConfigFlags_FLAG_WINDOW_UNFOCUSED         as u32); }
+            if info.always_top { SetWindowState(ConfigFlags_FLAG_WINDOW_TOPMOST           as u32); }
+            if info.always_run { SetWindowState(ConfigFlags_FLAG_WINDOW_ALWAYS_RUN        as u32); }
+            if info.alpha      { SetWindowState(ConfigFlags_FLAG_WINDOW_TRANSPARENT       as u32); }
+            if info.interlace  { SetWindowState(ConfigFlags_FLAG_INTERLACED_HINT          as u32); }
+            if info.no_border  { SetWindowState(ConfigFlags_FLAG_BORDERLESS_WINDOWED_MODE as u32); }
+            if info.mouse_pass { SetWindowState(ConfigFlags_FLAG_WINDOW_MOUSE_PASSTHROUGH as u32); }
+
+            // initialize R3D library.
             R3D_Init(info.size.0, info.size.1, 0);
-        }
-
-        /*
-        let (mut handle, thread) = raylib::init()
-            .title(&info.name)
-            .size(info.size.0, info.size.1)
-            .build();
-
-        let state = handle
-            .get_window_state()
-            .set_fullscreen_mode(info.full)
-            .set_window_resizable(info.resizable)
-            .set_window_undecorated(info.no_decor)
-            .set_window_hidden(info.hidden)
-            .set_window_minimized(info.minimize)
-            .set_window_maximized(info.maximize)
-            .set_window_unfocused(info.no_focus)
-            .set_window_topmost(info.always_top)
-            .set_window_always_run(info.always_run)
-            .set_window_transparent(info.alpha)
-            .set_interlaced_hint(info.interlace);
-
-        handle.set_window_state(state);
-        */
-
-        unsafe {
-            if info.no_border {
-                SetWindowState(ConfigFlags_FLAG_BORDERLESS_WINDOWED_MODE as u32);
-            }
-            if info.mouse_pass {
-                SetWindowState(ConfigFlags_FLAG_WINDOW_MOUSE_PASSTHROUGH as u32);
-            }
 
             // cap frame-rate.
             SetTargetFPS(info.rate as i32);
-        }
 
-        // create RL audio context.
-        //let audio = RaylibAudio::init_audio_device()
-        //    .map_err(|e| Self::panic(&e.to_string()))
-        //    .unwrap();
-        unsafe {
+            // create RL audio context.
             InitAudioDevice();
-        }
 
-        /*
-        if let Some(icon) = &info.icon {
-            if !icon.is_empty() {
-                // load icon from info manifest.
-                let icon = Image::load_image(icon)
-                    .map_err(|e| Self::panic(&e.to_string()))
-                    .unwrap();
-                handle.set_window_icon(icon);
+            // if info.icon entry isn't empty...
+            if let Some(icon) = &info.icon {
+                if !icon.is_empty() {
+                    // load icon from info manifest.
+                    let icon = LoadImage(Script::rust_to_c_string(icon).unwrap().as_ptr());
+                    SetWindowIcon(icon);
+                    UnloadImage(icon);
+                }
+            } else {
+                // load default Alicia icon.
+                let icon = LoadImageFromMemory(Script::rust_to_c_string(".png").unwrap().as_ptr(), Self::ICON.as_ptr(), Self::ICON.len() as i32);
+                SetWindowIcon(icon);
+                UnloadImage(icon);
             }
-        } else {
-            // load default Alicia icon.
-            let icon = Image::load_image_from_mem(".png", Self::ICON)
-                .map_err(|e| Self::panic(&e.to_string()))
-                .unwrap();
-            handle.set_window_icon(icon);
         }
-        */
-
-        //Some((handle, thread, audio))
     }
 
     // missing state, info.json does not exist.

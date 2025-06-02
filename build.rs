@@ -49,21 +49,162 @@
 */
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::env;
 use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 //================================================================
 
-const PATH_SYSTEM: &str = "source/rust/base/";
+fn main() {
+    use cmake::Config;
 
+    let dst = Config::new("source/rust/base/external/r3d-master/external/raylib")
+        .build_target(".")
+        .build();
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=raylib");
+
+    let dst = Config::new("source/rust/base/external/r3d-master")
+        .define("R3D_RAYLIB_VENDORED", "1")
+        .build();
+    println!("cargo:rustc-link-search=native={}/build", dst.display());
+    println!("cargo:rustc-link-lib=static=r3d");
+
+    cc::Build::new()
+        .file("source/rust/base/external/helper.c")
+        .compile("helper");
+
+    generate_binding_file(
+        &[
+            "source/rust/base/external/r3d-master/include/r3d.h".to_string(),
+            "source/rust/base/external/helper.h".to_string(),
+        ],
+        "helper.rs",
+    );
+
+    #[cfg(feature = "documentation")]
+    write_documentation();
+
+    // read every file in the API directory.
+    for file in std::fs::read_dir("source/lua/base").unwrap() {
+        // convert to string.
+        let file = file.expect("build.rs: Could not unwrap file.");
+
+        let kind = file.file_type().unwrap();
+
+        if kind.is_dir() {
+            continue;
+        }
+
+        // get file path.
+        let path = file.path();
+        let path = path
+            .to_str()
+            .expect("build.rs: Could not convert file path to string.");
+
+        // get file name.
+        let name = file.file_name();
+        let name = name
+            .to_str()
+            .expect("build.rs: Could not convert file name to string.");
+
+        // open file.
+        let file = File::open(path)
+            .unwrap_or_else(|_| panic!("build.rs: Could not open file \"{path}\"."));
+        let file = BufReader::new(file).lines();
+
+        let mut buffer = String::new();
+
+        // for each line in the file...
+        for line in file.map_while(Result::ok) {
+            if line.starts_with("---@example") {
+                let line = &line["---@example".len()..line.len()];
+                let line = &format!("test/base/{}", line.trim());
+
+                // open file.
+                let file = File::open(line)
+                    .unwrap_or_else(|_| panic!("build.rs: Could not open file \"{line}\"."));
+                let file = BufReader::new(file).lines();
+
+                buffer.push_str("---```lua\n");
+
+                for line in file.map_while(Result::ok) {
+                    buffer.push_str(&format!("---{line}"));
+                    buffer.push('\n');
+                }
+
+                buffer.push_str("---```\n");
+            } else {
+                buffer.push_str(&line);
+                buffer.push('\n');
+            }
+        }
+
+        let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+        std::fs::write(out_path.join(name), buffer)
+            .expect("build.rs: Could not write ---@example file.");
+    }
+
+    // where to search for for library linking.
+    #[cfg(target_os = "linux")]
+    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
+}
+
+//================================================================
+
+fn generate_binding_file(path: &[String], file: &str) {
+    let ignored_macros = IgnoreMacros(
+        vec![
+            "FP_INFINITE".into(),
+            "FP_NAN".into(),
+            "FP_NORMAL".into(),
+            "FP_SUBNORMAL".into(),
+            "FP_ZERO".into(),
+            "IPPORT_RESERVED".into(),
+        ]
+        .into_iter()
+        .collect(),
+    );
+
+    let bindings = bindgen::Builder::default()
+        .headers(path)
+        .parse_callbacks(Box::new(ignored_macros))
+        .generate()
+        .expect("Unable to generate bindings");
+
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join(file))
+        .expect("Couldn't write bindings!");
+}
+
+#[derive(Debug)]
+struct IgnoreMacros(HashSet<String>);
+
+impl bindgen::callbacks::ParseCallbacks for IgnoreMacros {
+    fn will_parse_macro(&self, name: &str) -> bindgen::callbacks::MacroParsingBehavior {
+        if self.0.contains(name) {
+            bindgen::callbacks::MacroParsingBehavior::Ignore
+        } else {
+            bindgen::callbacks::MacroParsingBehavior::Default
+        }
+    }
+}
+
+//================================================================
+
+#[cfg(feature = "documentation")]
+use std::io::{BufWriter, Write};
+
+#[cfg(feature = "documentation")]
 fn write_documentation() {
     // create parser object.
     let mut parser = Parser::new();
 
     // read every file in the API directory.
-    for file in std::fs::read_dir(PATH_SYSTEM).unwrap() {
+    for file in std::fs::read_dir(Parser::PATH_SYSTEM).unwrap() {
         // convert to string.
         let file = file.expect("build.rs: Could not unwrap file.");
 
@@ -105,119 +246,7 @@ fn write_documentation() {
     }
 }
 
-fn generate_binding_file(path: &[String], file: &str) {
-    let bindings = bindgen::Builder::default()
-        .headers(path)
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        .generate()
-        .expect("Unable to generate bindings");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join(file))
-        .expect("Couldn't write bindings!");
-}
-
-// this function is responsible for parsing the src/system/ folder and finding every special comment in the source code to then output it to the GitHub documentation and the Lua LSP definition file.
-fn main() {
-    use cmake::Config;
-
-    let dst = Config::new("source/rust/base/external/r3d-master/external/raylib")
-        .build_target(".")
-        .build();
-    println!("cargo:rustc-link-search=native={}/lib", dst.display());
-    println!("cargo:rustc-link-lib=static=raylib");
-
-    let dst = Config::new("source/rust/base/external/r3d-master")
-        .define("R3D_RAYLIB_VENDORED", "1")
-        .build();
-    println!("cargo:rustc-link-search=native={}/build", dst.display());
-    println!("cargo:rustc-link-lib=static=r3d");
-
-    cc::Build::new()
-        .file("source/rust/base/external/helper.c")
-        .compile("helper");
-
-    generate_binding_file(
-        &[
-            "source/rust/base/external/r3d-master/include/r3d.h".to_string(),
-            "source/rust/base/external/helper.h".to_string(),
-        ],
-        "helper.rs",
-    );
-
-    #[cfg(feature = "documentation")]
-    {
-        write_documentation();
-
-        // read every file in the API directory.
-        for file in std::fs::read_dir("source/lua/base").unwrap() {
-            // convert to string.
-            let file = file.expect("build.rs: Could not unwrap file.");
-
-            let kind = file.file_type().unwrap();
-
-            if kind.is_dir() {
-                continue;
-            }
-
-            // get file path.
-            let path = file.path();
-            let path = path
-                .to_str()
-                .expect("build.rs: Could not convert file path to string.");
-
-            // get file name.
-            let name = file.file_name();
-            let name = name
-                .to_str()
-                .expect("build.rs: Could not convert file name to string.");
-
-            // open file.
-            let file = File::open(path)
-                .unwrap_or_else(|_| panic!("build.rs: Could not open file \"{path}\"."));
-            let file = BufReader::new(file).lines();
-
-            let mut buffer = String::new();
-
-            // for each line in the file...
-            for line in file.map_while(Result::ok) {
-                if line.starts_with("---@example") {
-                    let line = &line["---@example".len()..line.len()];
-                    let line = &format!("test/base/{}", line.trim());
-
-                    // open file.
-                    let file = File::open(line)
-                        .unwrap_or_else(|_| panic!("build.rs: Could not open file \"{line}\"."));
-                    let file = BufReader::new(file).lines();
-
-                    buffer.push_str("---```lua\n");
-
-                    for line in file.map_while(Result::ok) {
-                        buffer.push_str(&format!("---{line}"));
-                        buffer.push('\n');
-                    }
-
-                    buffer.push_str("---```\n");
-                } else {
-                    buffer.push_str(&line);
-                    buffer.push('\n');
-                }
-            }
-
-            let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-            std::fs::write(out_path.join(name), buffer)
-                .expect("build.rs: Could not write ---@example file.");
-        }
-    }
-
-    // where to search for for library linking.
-    #[cfg(target_os = "linux")]
-    println!("cargo:rustc-link-arg=-Wl,-rpath,$ORIGIN");
-}
-
-//================================================================
-
+#[cfg(feature = "documentation")]
 struct Parser {
     class: bool,
     entry: bool,
@@ -226,7 +255,10 @@ struct Parser {
     meta_file: BufWriter<File>,
 }
 
+#[cfg(feature = "documentation")]
 impl Parser {
+    const PATH_SYSTEM: &str = "source/rust/base/";
+
     const META_FILE: &'static str = "meta.lua";
 
     #[rustfmt::skip]
@@ -778,8 +810,6 @@ r#"* Return: `{name}` – {info}
             .expect("Wiki::write_wiki_entry(): Could not write to file.");
     }
 }
-
-//================================================================
 
 // a representation of a Lua class.
 #[derive(Deserialize, Serialize)]

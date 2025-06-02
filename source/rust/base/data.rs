@@ -53,8 +53,8 @@ use crate::status::*;
 
 //================================================================
 
-use mlua::prelude::*;
 use crate::base::helper::*;
+use mlua::prelude::*;
 
 //================================================================
 
@@ -401,7 +401,7 @@ fn serialize(lua: &Lua, (text, kind): (LuaValue, Option<i32>)) -> mlua::Result<S
 #[cfg(not(feature = "serialization"))]
 fn serialize(lua: &Lua, (text, _): (LuaValue, Option<i32>)) -> mlua::Result<String> {
     let text: serde_json::Value = lua.from_value(text)?;
-    serde_json::to_string(&text).map_err(|e| mlua::Error::runtime(e.to_string()))
+    serde_json::to_string_pretty(&text).map_err(|e| mlua::Error::runtime(e.to_string()))
 }
 
 /* entry
