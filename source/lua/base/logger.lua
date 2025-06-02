@@ -129,7 +129,7 @@ end
 
 ---Draw the logger.
 function logger:draw()
-    local shape = vector_2:old(alicia.window.get_shape())
+    local shape = vector_2:new(alicia.window.get_shape())
 
     if alicia.input.board.get_press(INPUT_BOARD.F2) then
         self.active = not self.active
@@ -173,12 +173,12 @@ function logger:draw()
             end
         end
 
-        alicia.draw_2d.draw_box_2(box_2:old(0.0, 0.0, shape.x, shape.y), vector_2:zero(), 0.0,
-            color:old(0.0, 0.0, 0.0, 127.0))
+        alicia.draw_2d.draw_box_2(box_2:new(0.0, 0.0, shape.x, shape.y), vector_2:zero(), 0.0,
+            color:new(0.0, 0.0, 0.0, 127.0))
 
         self.window:draw(function()
             self.work, click = self.window:entry(
-                box_2:old(8.0, shape.y - (LOGGER_FONT_SCALE + 8.0), shape.x - 16.0, LOGGER_FONT_SCALE), "",
+                box_2:new(8.0, shape.y - (LOGGER_FONT_SCALE + 8.0), shape.x - 16.0, LOGGER_FONT_SCALE), "",
                 self.work)
         end)
 
@@ -206,8 +206,8 @@ function logger:draw()
 
     -- get the length of the current worker.
     local count        = #self.current
-    local text_point_a = vector_2:old(0.0, 0.0)
-    local text_point_b = vector_2:old(0.0, 0.0)
+    local text_point_a = vector_2:new(0.0, 0.0)
+    local text_point_b = vector_2:new(0.0, 0.0)
     local offset       = 0.0
 
     -- draw the latest logger current, iterating through the current in reverse.
@@ -251,9 +251,9 @@ function logger:draw()
                     LOGGER_FONT_SPACE,
                     true, line.color)
 
-                --alicia.draw_2d.draw_box_2(box_2:old(text_point_a.x, text_point_a.y, shape.x - 24.0, result),
+                --alicia.draw_2d.draw_box_2(box_2:new(text_point_a.x, text_point_a.y, shape.x - 24.0, result),
                 --    vector_2:zero(), 0.0,
-                --    color:old(0.0, 255.0, 0.0, 33.0))
+                --    color:new(0.0, 255.0, 0.0, 33.0))
             end
         end
     end

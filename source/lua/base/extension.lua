@@ -340,7 +340,7 @@ function math.direction_from_euler(angle)
     local d_z = vector_3:zero()
 
     -- Convert to radian.
-    local angle = vector_3:old(
+    local angle = vector_3:new(
         angle.z * (math.pi / 180.0) * -1.0,
         angle.y * (math.pi / 180.0) * -1.0,
         angle.x * (math.pi / 180.0) * -1.0

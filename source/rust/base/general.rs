@@ -513,42 +513,33 @@ impl<'de> Visitor<'de> for RectangleVisitor {
     where
         M: MapAccess<'de>,
     {
-        let mut x = None;
-        let mut y = None;
-        let mut s_x = None;
-        let mut s_y = None;
+        let mut point: Option<Vector2> = None;
+        let mut shape: Option<Vector2> = None;
 
         while let Some(k) = map.next_key::<String>()? {
             match k.as_str() {
-                "x" => x = Some(map.next_value()?),
-                "y" => y = Some(map.next_value()?),
-                "width" => s_x = Some(map.next_value()?),
-                "height" => s_y = Some(map.next_value()?),
+                "point" => point = Some(map.next_value()?),
+                "shape" => shape = Some(map.next_value()?),
                 _ => {}
             }
         }
 
-        if x.is_none() {
-            return Err(serde::de::Error::custom("box_2: Missing \"x\" key."));
+        if point.is_none() {
+            return Err(serde::de::Error::custom("box_2: Missing \"point\" key."));
         }
 
-        if y.is_none() {
-            return Err(serde::de::Error::custom("box_2: Missing \"y\" key."));
+        if shape.is_none() {
+            return Err(serde::de::Error::custom("box_2: Missing \"shape\" key."));
         }
 
-        if s_x.is_none() {
-            return Err(serde::de::Error::custom("box_2: Missing \"width\" key."));
-        }
-
-        if s_y.is_none() {
-            return Err(serde::de::Error::custom("box_2: Missing \"height\" key."));
-        }
+        let point = point.unwrap();
+        let shape = shape.unwrap();
 
         Ok(Rectangle {
-            x: x.unwrap(),
-            y: y.unwrap(),
-            width: s_x.unwrap(),
-            height: s_y.unwrap(),
+            x: point.x,
+            y: point.y,
+            width: shape.x,
+            height: shape.y,
         })
     }
 }
@@ -690,8 +681,8 @@ impl<'de> Visitor<'de> for RayVisitor {
 
         while let Some(k) = map.next_key::<String>()? {
             match k.as_str() {
-                "position" => position = Some(map.next_value()?),
-                "direction" => direction = Some(map.next_value()?),
+                "point" => position = Some(map.next_value()?),
+                "focus" => direction = Some(map.next_value()?),
                 _ => {}
             }
         }
