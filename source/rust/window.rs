@@ -58,11 +58,9 @@ use crate::base::helper::*;
 
 // window structure, responsible for drawing the missing/failure interface.
 pub struct Window {
-    data: [gizmo::Data; Self::GIZMO_COUNT],
     font: Font,
     logo: Texture2D,
     point: Vector2,
-    focus: Option<i32>,
     count: i32,
 }
 
@@ -77,12 +75,6 @@ impl Window {
         r: 255,
         g: 255,
         b: 255,
-        a: 255,
-    };
-    const COLOR_TEXT_BLACK: Color = Color {
-        r: 33,
-        g: 33,
-        b: 33,
         a: 255,
     };
 
@@ -125,10 +117,6 @@ impl Window {
 
     //================================================================
 
-    const GIZMO_COUNT: usize = 64;
-
-    //================================================================
-
     // get a new window instance.
     pub fn new() -> Self {
         // load font.
@@ -155,11 +143,9 @@ impl Window {
         };
 
         Self {
-            data: [gizmo::Data::default(); Self::GIZMO_COUNT],
             font,
             logo,
             point: Vector2 { x: 0.0, y: 0.0 },
-            focus: None,
             count: i32::default(),
         }
     }
@@ -220,7 +206,7 @@ impl Window {
             });
 
             // create a new info file for a project, which doesn't exist yet.
-            if self.button("New Project") {
+            if self.button("New Project", KeyboardKey_KEY_ONE) {
                 let path = std::env::current_dir()
                     .map_err(|e| Status::panic(&e.to_string()))
                     .unwrap();
@@ -238,7 +224,7 @@ impl Window {
             }
 
             // create a new info file for a project.
-            if self.button("Load Project") {
+            if self.button("Load Project", KeyboardKey_KEY_TWO) {
                 let path = std::env::current_dir()
                     .map_err(|e| Status::panic(&e.to_string()))
                     .unwrap();
@@ -256,8 +242,12 @@ impl Window {
             }
 
             // exit Alicia.
-            if self.button("Exit Alicia") {
+            if self.button("Exit Alicia", KeyboardKey_KEY_THREE) {
                 return Some(Status::Closure);
+            }
+
+            unsafe {
+                EndDrawing();
             }
         }
 
@@ -334,7 +324,7 @@ impl Window {
             });
 
             // reload Alicia.
-            if self.button("Load Project") {
+            if self.button("Load Project", KeyboardKey_KEY_ONE) {
                 unsafe {
                     EndDrawing();
                 }
@@ -342,14 +332,14 @@ impl Window {
             }
 
             // copy report to clipboard.
-            if self.button("Copy Report") {
+            if self.button("Copy Report", KeyboardKey_KEY_TWO) {
                 unsafe {
                     SetClipboardText(Script::rust_to_c_string(text).unwrap().as_ptr());
                 }
             }
 
             // exit Alicia.
-            if self.button("Exit Alicia") {
+            if self.button("Exit Alicia", KeyboardKey_KEY_THREE) {
                 unsafe {
                     EndDrawing();
                 }
@@ -415,7 +405,7 @@ impl Window {
     }
 
     // draw a button.
-    fn button(&mut self, text: &str) -> bool {
+    fn button(&mut self, text: &str, key: u32) -> bool {
         // get the point and shape of the gizmo.
         let rectangle = Rectangle {
             x: self.point.x,
@@ -424,31 +414,21 @@ impl Window {
             height: Self::BUTTON_SHAPE.y,
         };
 
-        // get state, and data of the widget.
-        let state = gizmo::State::get(self, rectangle);
-        let data = gizmo::Data::get_mutable(self);
-        data.set_hover(state.hover);
-        data.set_focus(state.focus);
-        let data = gizmo::Data::get(self);
-
         // get location of text.
         let text_point = Vector2 {
             x: rectangle.x + Self::BUTTON_TEXT_SHIFT.x,
-            y: rectangle.y + Self::BUTTON_TEXT_SHIFT.y - data.get_point(),
+            y: rectangle.y + Self::BUTTON_TEXT_SHIFT.y,
         };
 
         // draw card and text.
-        self.card_round(
-            data.get_shape(&rectangle),
-            data.get_color(&Window::COLOR_PRIMARY_MAIN),
-        );
-        self.font(text, text_point, data.get_color(&Self::COLOR_TEXT_WHITE));
+        self.card_round(rectangle, Window::COLOR_PRIMARY_MAIN);
+        self.font(text, text_point, Self::COLOR_TEXT_WHITE);
 
         // increment the point of the next gizmo.
         self.point.y += Self::BUTTON_SHAPE.y + Self::BUTTON_SHIFT;
         self.count += 1;
 
-        state.click
+        unsafe { IsKeyPressed(key as i32) }
     }
 
     // draw text.
@@ -462,142 +442,6 @@ impl Window {
                 Self::TEXT_SPACE,
                 color,
             );
-        }
-    }
-}
-
-pub mod gizmo {
-    use super::*;
-
-    #[derive(Default, Debug)]
-    pub struct State {
-        pub hover: bool,
-        pub focus: bool,
-        pub click: bool,
-    }
-
-    impl State {
-        // get the state of a gizmo.
-        pub fn get(window: &mut Window, rectangle: Rectangle) -> Self {
-            let mut state = State::default();
-            // check if the cursor is over the gizmo's shape.
-            let hover = unsafe { CheckCollisionPointRec(GetMousePosition(), rectangle) };
-
-            // cursor is currently over the gizmo...
-            if hover {
-                // no focus is set, and the mouse button has been set off, set current gizmo as the focus.
-                if window.focus.is_none()
-                    && unsafe { IsMouseButtonPressed(MouseButton_MOUSE_BUTTON_LEFT as i32) }
-                {
-                    window.focus = Some(window.count);
-                }
-
-                // set hover.
-                state.hover = true;
-            }
-
-            // focus is set...
-            if let Some(focus) = window.focus {
-                // current gizmo is the current focus!
-                if focus == window.count {
-                    // the mouse button has been set off...
-                    if unsafe { IsMouseButtonReleased(MouseButton_MOUSE_BUTTON_LEFT as i32) } {
-                        // if the mouse was hovering over the gizmo, set off click event.
-                        if hover {
-                            state.click = true;
-                        }
-
-                        // set window focus as none.
-                        window.focus = None;
-                    }
-
-                    // set focus.
-                    state.focus = true;
-                }
-            }
-
-            state
-        }
-    }
-
-    #[derive(Copy, Clone, Default)]
-    pub struct Data {
-        hover: f32,
-        focus: f32,
-    }
-
-    impl Data {
-        const POINT_SHIFT: f32 = 4.0;
-        const COLOR_UPPER: f32 = 0.25;
-        const COLOR_LOWER: f32 = 0.75;
-        const HOVER_SPEED: f32 = 16.0;
-        const FOCUS_SPEED: f32 = 16.0;
-
-        // borrow a data instance.
-        pub fn get(window: &Window) -> &Self {
-            window
-                .data
-                .get(window.count as usize)
-                .expect("Data::get(): gizmo overflow.")
-        }
-
-        // borrow a data instance mutably.
-        pub fn get_mutable(window: &mut Window) -> &mut Self {
-            window
-                .data
-                .get_mut(window.count as usize)
-                .expect("Data::get_mutable(): gizmo overflow.")
-        }
-
-        // get a point depending on the value of hover.
-        pub fn get_point(&self) -> f32 {
-            ((self.hover - 1.0) + (1.0 - self.focus)) * Self::POINT_SHIFT
-        }
-
-        // get a shape depending on the value of hover.
-        pub fn get_shape(&self, rectangle: &Rectangle) -> Rectangle {
-            Rectangle {
-                x: rectangle.x,
-                y: rectangle.y - self.get_point(),
-                width: rectangle.width,
-                height: rectangle.height,
-            }
-        }
-
-        // get a color depending on the value of hover.
-        pub fn get_color(&self, color: &Color) -> Color {
-            Color {
-                r: (color.r as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
-                g: (color.g as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
-                b: (color.b as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
-                a: color.a,
-            }
-        }
-
-        // adjust the hover variable.
-        pub fn set_hover(&mut self, value: bool) {
-            let frame = unsafe { GetFrameTime() };
-
-            if value {
-                self.hover += frame * Self::HOVER_SPEED;
-            } else {
-                self.hover -= frame * Self::HOVER_SPEED;
-            }
-
-            self.hover = self.hover.clamp(0.0, 1.0);
-        }
-
-        // adjust the focus variable.
-        pub fn set_focus(&mut self, value: bool) {
-            let frame = unsafe { GetFrameTime() };
-
-            if value {
-                self.focus += frame * Self::FOCUS_SPEED;
-            } else {
-                self.focus -= frame * Self::FOCUS_SPEED;
-            }
-
-            self.focus = self.focus.clamp(0.0, 1.0);
         }
     }
 }
