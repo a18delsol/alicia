@@ -83,8 +83,8 @@ function vector_2:new(x, y)
     --[[]]
 
     i.__type = "vector_2"
-    i.x = x
-    i.y = y
+    i.x      = x
+    i.y      = y
 
     return i
 end
@@ -203,9 +203,9 @@ function vector_3:new(x, y, z)
     --[[]]
 
     i.__type = "vector_3"
-    i.x = x
-    i.y = y
-    i.z = z
+    i.x      = x
+    i.y      = y
+    i.z      = z
 
     return i
 end
@@ -413,10 +413,10 @@ function vector_4:new(x, y, z, w)
     --[[]]
 
     i.__type = "vector_4"
-    i.x = x
-    i.y = y
-    i.z = z
-    i.w = w
+    i.x      = x
+    i.y      = y
+    i.z      = z
+    i.w      = w
 
     return i
 end
@@ -528,8 +528,8 @@ function box_3:new(min, max)
     --[[]]
 
     i.__type = "box_3"
-    i.min = min
-    i.max = max
+    i.min    = min
+    i.max    = max
 
     return i
 end
@@ -604,10 +604,10 @@ function color:new(r, g, b, a)
     --[[]]
 
     i.__type = "color"
-    i.r = r
-    i.g = g
-    i.b = b
-    i.a = a
+    i.r      = r
+    i.g      = g
+    i.b      = b
+    i.a      = a
 
     return i
 end
@@ -655,10 +655,10 @@ function camera_2d:new(shift, focus, angle, zoom)
     --[[]]
 
     i.__type = "camera_2d"
-    i.shift = shift
-    i.focus = focus
-    i.angle = angle
-    i.zoom = zoom
+    i.shift  = shift
+    i.focus  = focus
+    i.angle  = angle
+    i.zoom   = zoom
 
     return i
 end
@@ -689,11 +689,11 @@ function camera_3d:new(point, focus, angle, zoom, kind)
     --[[]]
 
     i.__type = "camera_3d"
-    i.point = point
-    i.focus = focus
-    i.angle = angle
-    i.zoom = zoom
-    i.kind = kind
+    i.point  = point
+    i.focus  = focus
+    i.angle  = angle
+    i.zoom   = zoom
+    i.kind   = kind
 
     return i
 end

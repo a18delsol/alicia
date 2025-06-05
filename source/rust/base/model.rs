@@ -97,6 +97,7 @@ unsafe impl Send for LuaModel {}
 impl Drop for LuaModel {
     fn drop(&mut self) {
         unsafe {
+            /*
             for x in 0..self.0.materialCount {
                 let material = *self.0.materials.wrapping_add(x as usize);
 
@@ -114,6 +115,7 @@ impl Drop for LuaModel {
                     }
                 }
             }
+            */
 
             UnloadModel(self.0);
         }
@@ -150,11 +152,11 @@ impl LuaModel {
                     if IsTextureValid(map.texture) {
                         // apparently every model is also bound to the internal RL texture? what?
                         if map.texture.id != 1 {
-                            GenTextureMipmaps(&mut map.texture);
-                            SetTextureFilter(
-                                map.texture,
-                                TextureFilter_TEXTURE_FILTER_BILINEAR as i32,
-                            );
+                            //GenTextureMipmaps(&mut map.texture);
+                            //SetTextureFilter(
+                            //    map.texture,
+                            //    TextureFilter_TEXTURE_FILTER_BILINEAR as i32,
+                            //);
                         }
                     }
                 }
@@ -168,8 +170,8 @@ impl LuaModel {
                 };
 
                 R3D_SetMaterialOcclusion(&mut m, std::ptr::null_mut(), 1.0);
-                //R3D_SetMaterialRoughness(&mut m, std::ptr::null_mut(), 1.0);
-                //R3D_SetMaterialMetalness(&mut m, std::ptr::null_mut(), 1.0);
+                R3D_SetMaterialRoughness(&mut m, std::ptr::null_mut(), 1.0);
+                R3D_SetMaterialMetalness(&mut m, std::ptr::null_mut(), 1.0);
 
                 let mut a = *m.maps.wrapping_add(3);
                 a.texture.id = 1;

@@ -48,13 +48,13 @@
 -- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --]]
 
-require "base/constant"
-require "base/extension"
-require "base/allocator"
-require "base/primitive"
-require "base/scheduler"
-require "base/action"
-require "base/logger"
-require "base/window"
-require "base/system"
-require "base/scene"
+require("base/constant")
+require("base/extension")
+require("base/allocator")
+require("base/primitive")
+require("base/scheduler")
+require("base/action")
+require("base/logger")
+require("base/window")
+require("base/system")
+require("base/scene")

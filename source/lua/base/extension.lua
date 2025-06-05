@@ -242,7 +242,10 @@ function table.restore_meta(value)
     end
 end
 
--- TO-DO
+---Merge the content of a table A and a table B into a table C. The merge operation is shallow, and not a deep copy.
+---@param a table # Table A.
+---@param b table # Table B.
+---@return c table # Table C.
 function table.merge(a, b)
     local result = {}
 
@@ -387,10 +390,16 @@ function math.direction_from_euler(angle)
     return d_x, d_y, d_z
 end
 
+---Convert an angle from degrees to radians.
+---@param value # The angle, in degrees.
+---@return number value # The angle, in radians.
 function math.degree_to_radian(value)
     return value * (math.pi / 180.0)
 end
 
+---Convert an angle from radians to degrees.
+---@param value # The angle, in radians.
+---@return number value # The angle, in degrees.
 function math.radian_to_degree(value)
     return value * (180.0 / math.pi)
 end

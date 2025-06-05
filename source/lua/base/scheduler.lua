@@ -64,7 +64,7 @@ function scheduler:new()
 
     --[[]]
 
-    i.__type = "scheduler"
+    i.__type  = "scheduler"
     i.routine = {}
 
     return i
