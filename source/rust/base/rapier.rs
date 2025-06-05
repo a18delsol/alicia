@@ -208,10 +208,11 @@ impl mlua::UserData for Rapier {
             "name": "rapier:cast_ray_normal",
             "info": "Cast a ray, and also get the normal information..",
             "member": [
-                { "name": "ray",           "info": "Ray to cast.", "kind": "ray"     },
-                { "name": "length",        "info": "Ray length.",  "kind": "number"  },
-                { "name": "solid",         "info": "TO-DO",        "kind": "boolean" },
-                { "name": "exclude_rigid", "info": "TO-DO",        "kind": "table"   }
+                { "name": "ray",            "info": "Ray to cast.", "kind": "ray"     },
+                { "name": "length",         "info": "Ray length.",  "kind": "number"  },
+                { "name": "solid",          "info": "TO-DO",        "kind": "boolean" },
+                { "name": "exclude_rigid",  "info": "TO-DO",        "kind": "table"   }
+                { "name": "exclude_collider", "info": "TO-DO",        "kind": "table"   }
             ],
             "result": [
                 { "name": "rigid_body", "info": "Rigid body handle.", "kind": "table" }
@@ -347,6 +348,7 @@ impl mlua::UserData for Rapier {
                     filter = filter.exclude_collider(lua.from_value(collider)?);
                 }
 
+                // TO-DO remove?
                 filter = filter.exclude_sensors();
 
                 let mut hit: Option<ColliderHandle> = None;
@@ -537,7 +539,11 @@ impl mlua::UserData for Rapier {
                 let position: Vector3 = lua.from_value(position)?;
 
                 if let Some(collider) = this.collider_set.get_mut(collider) {
-                    collider.set_translation(vector![position.x, position.y, position.z,]);
+                    collider.set_translation(vector![position.x, position.y, position.z]);
+
+                    // TO-DO should this be a separate method entirely?
+                    collider
+                        .set_translation_wrt_parent(vector![position.x, position.y, position.z]);
                     return Ok(());
                 }
 
@@ -929,7 +935,7 @@ impl mlua::UserData for Rapier {
 
                 if let Some(rigid_body) = this.rigid_body_set.get_mut(rigid_body) {
                     rigid_body
-                        .set_translation(vector![position.x, position.y, position.z,], wake_up);
+                        .set_translation(vector![position.x, position.y, position.z], wake_up);
                     return Ok(());
                 }
 
@@ -1086,7 +1092,7 @@ impl mlua::UserData for Rapier {
                                     p_table,
                                     i_table,
                                     TriMeshFlags::all(),
-                                ),
+                                ).unwrap(),
                                 rigid_body,
                             )
                         } else {
@@ -1213,18 +1219,26 @@ impl EventHandler for AliciaHandler {
     ) {
         let mut lock = self.event_list.lock().unwrap();
         match event {
-            CollisionEvent::Started(collider_handle, collider_handle1, collision_event_flags) => {
+            CollisionEvent::Started(
+                collider_handle_a,
+                collider_handle_b,
+                collision_event_flags,
+            ) => {
                 lock.push(AliciaEvent {
-                    handle_a: collider_handle,
-                    handle_b: collider_handle1,
+                    handle_a: collider_handle_a,
+                    handle_b: collider_handle_b,
                     flag: collision_event_flags,
                     start: true,
                 });
             }
-            CollisionEvent::Stopped(collider_handle, collider_handle1, collision_event_flags) => {
+            CollisionEvent::Stopped(
+                collider_handle_a,
+                collider_handle_b,
+                collision_event_flags,
+            ) => {
                 lock.push(AliciaEvent {
-                    handle_a: collider_handle,
-                    handle_b: collider_handle1,
+                    handle_a: collider_handle_a,
+                    handle_b: collider_handle_b,
                     flag: collision_event_flags,
                     start: false,
                 });

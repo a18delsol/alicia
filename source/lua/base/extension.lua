@@ -168,7 +168,7 @@ end
 ---@param value  table # Table to check the value in.
 ---@param object any   # Value to check.
 ---@return boolean check # True if value is in table, false otherwise.
-function table.in_set(value, object)
+function table.in_set(value, object, work)
     for _, v in pairs(value) do
         if v == object then
             return true
@@ -240,6 +240,21 @@ function table.restore_meta(value)
             end
         end
     end
+end
+
+-- TO-DO
+function table.merge(a, b)
+    local result = {}
+
+    for key, value in pairs(a) do
+        result[key] = value
+    end
+
+    for key, value in pairs(b) do
+        result[key] = value
+    end
+
+    return result
 end
 
 --[[----------------------------------------------------------------]]

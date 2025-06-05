@@ -48,8 +48,6 @@
 -- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --]]
 
-
-
 local function get_plane_frustum(a, b, c, d)
     return alicia.r3d.get_point_frustum(a)
         or alicia.r3d.get_point_frustum(b)
@@ -118,55 +116,249 @@ end
 --[[----------------------------------------------------------------]]
 
 ---@class scene
+---@field camera_3d    camera_3d
+---@field camera_2d    camera_2d
+---@field light        table
+---@field sound        table
+---@field music        table
+---@field view_array   table
+---@field room_array   table
+---@field entity_array table
+---@field entity_index table
+---@field system       table
+---@field time         table
+---@field step         table
 scene = {
     __meta = {}
 }
 
 ---Create a new scene.
----@param shader shader # The light shader.
 ---@return scene value # The scene.
-function scene:new(shader)
+function scene:new()
     local i = {}
     setmetatable(i, self.__meta)
     getmetatable(i).__index = self
 
     --[[]]
 
-    i.__type    = "scene"
-    i.camera_3d = camera_3d:new(vector_3:new(0.0, 0.0, 0.0), vector_3:new(0.0, 0.0, 0.0), vector_3:new(0.0, 1.0, 0.0),
+    i.__type       = "scene"
+    i.camera_3d    = camera_3d:new(vector_3:new(0.0, 0.0, 0.0), vector_3:new(0.0, 0.0, 0.0), vector_3:new(0.0, 1.0, 0.0),
         90.0, CAMERA_3D_KIND.PERSPECTIVE)
-    i.camera_2d = camera_2d:new(vector_2:new(0.0, 0.0), vector_2:new(0.0, 0.0), 0.0, 1.0)
-    i.light     = {}
-    i.sound     = {}
-    i.music     = {}
-    i.view_list = {}
-    i.room_list = {}
+    i.camera_2d    = camera_2d:new(vector_2:new(0.0, 0.0), vector_2:new(0.0, 0.0), 0.0, 1.0)
+    i.light        = {}
+    i.sound        = {}
+    i.music        = {}
+    i.view_array   = {}
+    i.room_array   = {}
+    i.entity_array = {}
+    i.entity_index = 2
+    i.system       = system:new({ "data" })
+    i.time         = 0.0
+    i.tick         = 0.0
+    i.step         = 0.0
+
+    --[[]]
+
+    i.rapier = alicia.rapier:new()
+    i.static = i.rapier:rigid_body(RIGID_BODY_KIND.FIXED)
+    i.sensor = i.rapier:rigid_body(RIGID_BODY_KIND.FIXED)
+
+    -- reserve 0 and 1 for room geometry and room occlusion culling.
+    -- should research if it's possible to only have one rigid body.
+    i.rapier:set_rigid_body_user_data(i.static, 0)
+    i.rapier:set_rigid_body_user_data(i.sensor, 1)
 
     return i
 end
 
 --[[----------------------------------------------------------------]]
 
-function scene:begin(call, system, ...)
-    audio_update(self.sound, system.get_sound)
-    audio_update(self.music, system.get_music)
+-- TO-DO remove ...
+function scene:cast_ray_normal(...)
+    local collider, time, n_x, n_y, n_z = self.rapier:cast_ray_normal(...)
 
-    for _, light in ipairs(self.light) do
-        light:set_state(1)
+    if collider then
+        local parent = self.rapier:get_collider_parent(collider)
+        local entity = self.rapier:get_rigid_body_user_data(parent)
+        return self:entity_find(entity), time, vector_3:new(n_x, n_y, n_z)
     end
 
-    alicia.r3d.begin(function()
-        for _, room in ipairs(self.room_list) do
-            if get_point_box_3(self.camera_3d.point, room.size) then
-                room:draw(self, system, true)
-                break
+    return nil
+end
+
+-- TO-DO remove ...
+function scene:cast_ray(...)
+    local collider, time = self.rapier:cast_ray(...)
+
+    if collider then
+        local parent = self.rapier:get_collider_parent(collider)
+        local entity = self.rapier:get_rigid_body_user_data(parent)
+        return self:entity_find(entity), time
+    end
+
+    return nil
+end
+
+function scene:entity_room_check(entity)
+    for _, room in ipairs(entity.room_array) do
+        if room.active then
+            return true
+        end
+    end
+
+    return false
+end
+
+function scene:entity_attach(entity)
+    table.insert(self.entity_array, entity)
+
+    entity.index      = self.entity_index
+    self.entity_index = self.entity_index + 1
+end
+
+function scene:entity_detach(entity)
+    if entity.rigid then
+        self.rapier:rigid_body_remove(entity.rigid, true)
+
+        -- calling step does prevent an issue with an invalid collision event,
+        -- but i'm not sure if it's desirable to fix it this way?
+        self.rapier:step()
+    else
+        if entity.collider then
+            self.rapier:collider_remove(entity.collider)
+            self.rapier:step()
+        end
+    end
+
+    table.remove_object(self.entity_array, entity)
+end
+
+function scene:entity_find(index)
+    for i, entity in ipairs(self.entity_array) do
+        if entity.index == index then
+            return entity, i
+        end
+    end
+end
+
+function scene:load_level(path)
+    local i = 0
+
+    while self.system:find(string.format("%s_%i.glb", path, i)) do
+        local path = string.format("%s_%i.glb", path, i)
+        room:new(self, path)
+
+        i = i + 1
+    end
+
+    self.rapier:step()
+end
+
+function scene:update(call, step, ...)
+    local frame = math.min(alicia.general.get_frame_time(), 0.25)
+
+    self.time = self.time + frame
+    self.step = self.step + frame
+
+    while self.step >= step do
+        self.tick = self.tick + step
+        self.step = self.step - step
+
+        local collision = self.rapier:step()
+
+        if collision then
+            for _, event in ipairs(collision) do
+                local rigid_a  = self.rapier:get_collider_parent(event.handle_a)
+                local rigid_b  = self.rapier:get_collider_parent(event.handle_b)
+                local entity_a = self.rapier:get_rigid_body_user_data(rigid_a)
+                local entity_b = self.rapier:get_rigid_body_user_data(rigid_b)
+
+                -- figure out which of the two is an actual entity and not a room.
+                if entity_a == 1 or entity_b == 1 then
+                    local entity = nil
+                    local room   = nil
+
+                    if entity_a == 1 then
+                        entity = self:entity_find(entity_b)
+                        room   = self:entity_find(self.rapier:get_collider_user_data(event.handle_a))
+                    else
+                        entity = self:entity_find(entity_a)
+                        room   = self:entity_find(self.rapier:get_collider_user_data(event.handle_b))
+                    end
+
+                    -- if entity and room are valid...
+                    if entity and room then
+                        if event.start then
+                            -- attach this room to the entity.
+                            table.insert(entity.room_array, room)
+                        else
+                            -- detach this room from the entity.
+                            table.remove_object(entity.room_array, room)
+                        end
+                    end
+                else
+                    entity_a = self:entity_find(entity_a)
+                    entity_b = self:entity_find(entity_b)
+
+                    -- TO-DO should pass state into this.
+                    if entity_a and entity_b then
+                        if entity_a.collision then entity_a:collision(entity_b) end
+                        if entity_b.collision then entity_b:collision(entity_a) end
+                    end
+                end
             end
         end
-    end, self.camera_3d, ...)
 
-    for _, light in ipairs(self.light) do
-        light:set_state(0)
+        if call then
+            call(collision, ...)
+        end
     end
+end
+
+function scene:draw(call_main, call_side)
+    --[[ update sound/music volume/pan. ]]
+
+    audio_update(self.sound, self.system.get_sound)
+    audio_update(self.music, self.system.get_music)
+
+    --[[ main 3D pass. ]]
+
+    if true then
+        for _, light in ipairs(self.light) do
+            light:set_state(1)
+        end
+
+        alicia.r3d.begin(function()
+            for _, room in ipairs(self.room_array) do
+                room.active = false
+            end
+
+            for _, room in ipairs(self.room_array) do
+                if get_point_box_3(self.camera_3d.point, room.size) then
+                    room:draw(self, true)
+                    break
+                end
+            end
+
+            if call_main then
+                call_main()
+            end
+        end, self.camera_3d)
+
+        for _, light in ipairs(self.light) do
+            light:set_state(0)
+        end
+    end
+
+    --[[ side 3D pass. ]]
+
+    alicia.draw_3d.begin(function()
+        self.rapier:debug_render()
+
+        if call_side then
+            call_side()
+        end
+    end, self.camera_3d)
 end
 
 --[[----------------------------------------------------------------]]
@@ -354,33 +546,53 @@ room = {
     __meta = {}
 }
 
-function room:new(scene, system, path)
+---@param scene scene
+function room:new(scene, path)
     local i = {}
     setmetatable(i, self.__meta)
     getmetatable(i).__index = self
 
     --[[]]
 
-    i.__type    = "room"
-    i.path      = path
-    i.view_list = {}
+    i.__type     = "room"
+    i.path       = path
+    i.view_array = {}
 
     --[[]]
 
-    local model = system:set_model(path)
+    scene:entity_attach(i)
+
+    local model                        = scene.system:set_model(path)
 
     local x_a, y_a, z_a, x_b, y_b, z_b = model:get_box_3()
-    i.size = box_3:new(
+    i.size                             = box_3:new(
         vector_3:new(x_a, y_a, z_a),
         vector_3:new(x_b, y_b, z_b)
     )
 
-    table.insert(scene.room_list, i)
+    --[[]]
+
+    local point = (i.size.max + i.size.min) * 0.5
+    local shape = (i.size.max - i.size.min) * 0.5
+
+    -- create sensor bound box around room.
+    local collider = scene.rapier:collider_builder(scene.sensor, 0, shape)
+    scene.rapier:set_collider_sensor(collider, true)
+    scene.rapier:set_collider_position(collider, point)
+    scene.rapier:set_collider_user_data(collider, i.index)
+
+    --[[]]
+
+    for x = 0, model.mesh_count - 1 do
+        scene.rapier:collider_builder(scene.static, 1, model:mesh_vertex(x), model:mesh_index(x))
+    end
+
+    table.insert(scene.room_array, i)
 
     return i
 end
 
-function room:draw(scene, system, main, previous)
+function room:draw(scene, main, previous)
     local draw = false
 
     if main then
@@ -388,7 +600,7 @@ function room:draw(scene, system, main, previous)
     else
         local point = scene.camera_3d.point
 
-        for _, view in ipairs(self.view_list) do
+        for _, view in ipairs(self.view_array) do
             if get_plane_frustum(view.a, view.b, view.c, view.d) then
                 --local m_a = (view.a - point):magnitude()
                 --local m_b = (view.b - point):magnitude()
@@ -407,18 +619,20 @@ function room:draw(scene, system, main, previous)
     end
 
     if draw then
-        system:get_model(self.path):draw(vector_3:zero(), 1.0, color:white(), true)
+        self.active = true
 
-        for _, view in ipairs(self.view_list) do
+        scene.system:get_model(self.path):draw(vector_3:zero(), 1.0, color:white(), true)
+
+        for _, view in ipairs(self.view_array) do
             if view.link_a and not (view.link_a == self) then
                 if not (previous and view.link_a == previous) then
-                    view.link_a:draw(scene, system, false, self)
+                    view.link_a:draw(scene, false, self)
                 end
             end
 
             if view.link_b and not (view.link_b == self) then
                 if not (previous and view.link_b == previous) then
-                    view.link_b:draw(scene, system, false, self)
+                    view.link_b:draw(scene, false, self)
                 end
             end
         end
@@ -451,7 +665,7 @@ function view:new(scene, a, b, c, d)
     i.c = c
     i.d = d
 
-    table.insert(scene.view_list, i)
+    table.insert(scene.view_array, i)
 
     local center = plane_center(i.a, i.b, i.c, i.d)
     local normal = plane_normal(i.a, i.b, i.c)
@@ -459,14 +673,14 @@ function view:new(scene, a, b, c, d)
     local link_a = center + normal
     local link_b = center - normal
 
-    for _, room in ipairs(scene.room_list) do
+    for _, room in ipairs(scene.room_array) do
         if get_point_box_3(link_a, room.size) then
             i.link_a = room
-            table.insert(room.view_list, i)
+            table.insert(room.view_array, i)
         end
         if get_point_box_3(link_b, room.size) then
             i.link_b = room
-            table.insert(room.view_list, i)
+            table.insert(room.view_array, i)
         end
     end
 

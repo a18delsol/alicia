@@ -89,22 +89,33 @@ function vector_2:new(x, y)
     return i
 end
 
+---Set every component for the current vector.
+---@param x number # "X" component.
+---@param y number # "Y" component.
+function vector_2:set(x, y)
+    self.x = x
+    self.y = y
+end
+
 ---Get the "X" vector.
+---@param scalar? number # Scale of the "X" component.
 ---@return vector_2 value # The vector.
-function vector_2:x()
-    return vector_2:new(1.0, 0.0)
+function vector_2:x(scalar)
+    return vector_2:new(scalar or 1.0, 0.0)
 end
 
 ---Get the "Y" vector.
+---@param scalar? number # Scale of the "Y" component.
 ---@return vector_2 value # The vector.
-function vector_2:y()
-    return vector_2:new(0.0, 1.0)
+function vector_2:y(scalar)
+    return vector_2:new(0.0, scalar or 1.0)
 end
 
 ---Get a vector, with every component set to "1".
+---@param scalar? number # Scale of the "X" and "Y" component.
 ---@return vector_2 value # The vector.
-function vector_2:one()
-    return vector_2:new(1.0, 1.0)
+function vector_2:one(scalar)
+    return vector_2:new(scalar or 1.0, scalar or 1.0)
 end
 
 ---Get a vector, with every component set to "0".
@@ -199,28 +210,42 @@ function vector_3:new(x, y, z)
     return i
 end
 
+---Set every component for the current vector.
+---@param x number # "X" component.
+---@param y number # "Y" component.
+---@param z number # "Z" component.
+function vector_3:set(x, y, z)
+    self.x = x
+    self.y = y
+    self.z = z
+end
+
 ---Get the "X" vector.
+---@param scalar? number # Scale of the "X" component.
 ---@return vector_3 value # The vector.
-function vector_3:x()
-    return vector_3:new(1.0, 0.0, 0.0)
+function vector_3:x(scalar)
+    return vector_3:new(scalar or 1.0, 0.0, 0.0)
 end
 
 ---Get the "Y" vector.
+---@param scalar? number # Scale of the "Y" component.
 ---@return vector_3 value # The vector.
-function vector_3:y()
-    return vector_3:new(0.0, 1.0, 0.0)
+function vector_3:y(scalar)
+    return vector_3:new(0.0, scalar or 1.0, 0.0)
 end
 
 ---Get the "Z" vector.
+---@param scalar? number # Scale of the "Z" component.
 ---@return vector_3 value # The vector.
-function vector_3:z()
-    return vector_3:new(0.0, 0.0, 1.0)
+function vector_3:z(scalar)
+    return vector_3:new(0.0, 0.0, scalar or 1.0)
 end
 
 ---Get a vector, with every component set to "1".
----@return vector_3 value # The vector.
-function vector_3:one()
-    return vector_3:new(1.0, 1.0, 1.0)
+---@param scalar? number # Scale of the "X", "Y" and "Z" component.
+---@return vector_2 value # The vector.
+function vector_3:one(scalar)
+    return vector_3:new(scalar or 1.0, scalar or 1.0, scalar or 1.0)
 end
 
 ---Get a vector, with every component set to "0".
