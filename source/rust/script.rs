@@ -556,6 +556,8 @@ pub struct ScriptInfo {
     pub mouse_pass: bool,
     #[serde(default = "ScriptInfo::interlace")]
     pub interlace: bool,
+    #[serde(default = "ScriptInfo::log_level")]
+    pub log_level: i32,
 }
 
 #[rustfmt::skip]
@@ -581,6 +583,7 @@ impl ScriptInfo {
     fn msaa()       -> bool           { false }
     fn mouse_pass() -> bool           { false }
     fn interlace()  -> bool           { false }
+    fn log_level()  -> i32            { 0 }
 }
 
 #[rustfmt::skip]
@@ -608,6 +611,7 @@ impl Default for ScriptInfo {
             msaa:       Self::msaa(),
             mouse_pass: Self::mouse_pass(),
             interlace:  Self::interlace(),
+            log_level:  Self::log_level(),
         }
     }
 }

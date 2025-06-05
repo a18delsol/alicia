@@ -159,6 +159,8 @@ impl Status {
         if info.scale { flag |= ConfigFlags_FLAG_WINDOW_HIGHDPI     as u32; }
 
         unsafe {
+            SetTraceLogLevel(info.log_level);
+
             SetConfigFlags(flag);
 
             // create RL window, thread.
