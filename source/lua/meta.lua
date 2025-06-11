@@ -3180,14 +3180,14 @@ function alicia.image.new_text() end
 --- ---
 ---*Not available in head-less mode.*
 ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L64)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L66)
 ---@class alicia.font
 alicia.font = {}
 
 ---An unique handle to a font in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L92)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L94)
 ---@class font
 font = {}
 
@@ -3201,7 +3201,7 @@ font = {}
 ---@param color color # Color of font to draw.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L116)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L118)
 function font:draw(label,point,origin,angle,scale,space,color) end
 
 ---Measure the size of a given text on screen, with a given font.
@@ -3212,7 +3212,7 @@ function font:draw(label,point,origin,angle,scale,space,color) end
 ---@return number size_y # Size of text (Y).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L166)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L212)
 function font:measure_text(label,scale,space) end
 
 ---Create a new font resource.
@@ -3221,7 +3221,7 @@ function font:measure_text(label,scale,space) end
 ---@return font font # Font resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L195)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L271)
 function alicia.font.new(path,size) end
 
 ---Create a new font resource, from memory.
@@ -3231,7 +3231,7 @@ function alicia.font.new(path,size) end
 ---@return font font # Font resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L226)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L302)
 function alicia.font.new_from_memory(data,kind,size) end
 
 ---Create a new font resource, from the default font.
@@ -3239,13 +3239,13 @@ function alicia.font.new_from_memory(data,kind,size) end
 ---@return font font # Font resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L264)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L340)
 function alicia.font.new_default(size) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L295)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L371)
 function alicia.font.draw_frame_rate() end
 
 ---Draw text.
@@ -3255,14 +3255,14 @@ function alicia.font.draw_frame_rate() end
 ---@param color color # The color of the text.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L317)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L393)
 function alicia.font.draw_text(point,label,scale,color) end
 
 ---Set the vertical space between each line-break.
 ---@param space number # Vertical space.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L347)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/font.rs#L423)
 function alicia.font.set_text_line_space(space) end
 
 ---The automation API.

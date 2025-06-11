@@ -48,6 +48,8 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+pub mod helper;
+
 /* base library */
 pub mod automation;
 pub mod collision;

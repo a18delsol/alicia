@@ -67,16 +67,7 @@ function scene:new(shader)
     i.camera_3d = camera_3d:new(vector_3:new(0.0, 0.0, 0.0), vector_3:new(0.0, 0.0, 0.0), vector_3:new(0.0, 1.0, 0.0),
         90.0, CAMERA_3D_KIND.PERSPECTIVE)
     i.camera_2d = camera_2d:new(vector_2:new(0.0, 0.0), vector_2:new(0.0, 0.0), 0.0, 1.0)
-    i.light = light_manager:new(shader)
-    i.frustum = {
-        vector_4:new(0.0, 0.0, 0.0, 0.0),
-        vector_4:new(0.0, 0.0, 0.0, 0.0),
-        vector_4:new(0.0, 0.0, 0.0, 0.0),
-        vector_4:new(0.0, 0.0, 0.0, 0.0),
-        vector_4:new(0.0, 0.0, 0.0, 0.0),
-        vector_4:new(0.0, 0.0, 0.0, 0.0),
-    }
-    i.batch = {}
+    --i.light = light_manager:new(shader)
     i.sound = {}
     i.music = {}
 
@@ -84,14 +75,6 @@ function scene:new(shader)
 end
 
 function scene:begin(call, system, camera_3d)
-    self:get_frustum()
-    self.light:begin(call, camera_3d)
-
-    for model, _ in pairs(self.batch) do
-        local model = system:get_model(model)
-        model:draw_mesh_instance(0.0)
-    end
-
     for i, sound in ipairs(self.sound) do
         local data = system:get_sound(sound.path)
 
@@ -260,13 +243,13 @@ function scene:play_sound(system, path, point, dynamic, volume, distance_min, di
     sound:play(alias)
 
     table.insert(self.sound, {
-        path = path,
-        point = point and vector_3:new(point.x, 0.0, point.z),
-        dynamic = dynamic,
-        volume = volume,
+        path         = path,
+        point        = point and vector_3:new(point.x, 0.0, point.z),
+        dynamic      = dynamic,
+        volume       = volume,
         distance_min = distance_min,
         distance_max = distance_max,
-        alias = alias
+        alias        = alias
     })
 end
 
@@ -350,200 +333,13 @@ function scene:play_music(system, path, point, dynamic, volume, distance_min, di
     music:play()
 
     table.insert(self.music, {
-        path = path,
-        point = point and vector_3:new(point.x, 0.0, point.z),
-        dynamic = dynamic,
-        volume = volume,
+        path         = path,
+        point        = point and vector_3:new(point.x, 0.0, point.z),
+        dynamic      = dynamic,
+        volume       = volume,
         distance_min = distance_min,
         distance_max = distance_max,
     })
-end
-
-function scene:create_model_instance(system, path, entity, point)
-    local model = system:get_model(path)
-    local token = model:insert_transform_list(point)
-
-    if not self.batch[path] then
-        self.batch[path] = {}
-    end
-
-    self.batch[path][token + 1] = {
-        [1] = token,
-        [2] = point.x,
-        [3] = point.y,
-        [4] = point.z,
-    }
-
-    if not entity.batch then
-        entity.batch = {}
-    end
-
-    entity.batch[path] = token + 1
-end
-
-function scene:update_entity_instance(entity)
-    if entity.batch then
-        for model, token in pairs(entity.batch) do
-            local batch = self.batch[model][token]
-            batch[2] = entity.point.x
-            batch[3] = entity.point.y
-            batch[4] = entity.point.z
-        end
-    end
-end
-
-function scene:update_model_instance(system)
-    for model, batch in pairs(self.batch) do
-        local model = system:get_model(model)
-        model:set_transform_list_batch(batch)
-    end
-end
-
-function scene:clear_model_instance(system)
-    for model, batch in pairs(self.batch) do
-        local model = system:get_model(model)
-        model:clear_transform_list()
-    end
-end
-
-function scene:get_frustum()
-    local projection = matrix:old(
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0
-    )
-    local model_view = matrix:old(
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0
-    )
-    projection:set(alicia.draw_3d.get_matrix_projection())
-    model_view:set(alicia.draw_3d.get_matrix_model_view())
-
-    local plane = matrix:old(
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0
-    )
-
-    plane.m0 = model_view.m0 * projection.m0 + model_view.m1 * projection.m4 + model_view.m2 * projection.m8 +
-        model_view.m3 * projection.m12
-    plane.m1 = model_view.m0 * projection.m1 + model_view.m1 * projection.m5 + model_view.m2 * projection.m9 +
-        model_view.m3 * projection.m13
-    plane.m2 = model_view.m0 * projection.m2 + model_view.m1 * projection.m6 + model_view.m2 * projection.m10 +
-        model_view.m3 * projection.m14
-    plane.m3 = model_view.m0 * projection.m3 + model_view.m1 * projection.m7 + model_view.m2 * projection.m11 +
-        model_view.m3 * projection.m15
-    plane.m4 = model_view.m4 * projection.m0 + model_view.m5 * projection.m4 + model_view.m6 * projection.m8 +
-        model_view.m7 * projection.m12
-    plane.m5 = model_view.m4 * projection.m1 + model_view.m5 * projection.m5 + model_view.m6 * projection.m9 +
-        model_view.m7 * projection.m13
-    plane.m6 = model_view.m4 * projection.m2 + model_view.m5 * projection.m6 + model_view.m6 * projection.m10 +
-        model_view.m7 * projection.m14
-    plane.m7 = model_view.m4 * projection.m3 + model_view.m5 * projection.m7 + model_view.m6 * projection.m11 +
-        model_view.m7 * projection.m15
-    plane.m8 = model_view.m8 * projection.m0 + model_view.m9 * projection.m4 + model_view.m10 * projection.m8 +
-        model_view.m11 * projection.m12
-    plane.m9 = model_view.m8 * projection.m1 + model_view.m9 * projection.m5 + model_view.m10 * projection.m9 +
-        model_view.m11 * projection.m13
-    plane.m10 = model_view.m8 * projection.m2 + model_view.m9 * projection.m6 + model_view.m10 * projection.m10 +
-        model_view.m11 * projection.m14
-    plane.m11 = model_view.m8 * projection.m3 + model_view.m9 * projection.m7 + model_view.m10 * projection.m11 +
-        model_view.m11 * projection.m15
-    plane.m12 = model_view.m12 * projection.m0 + model_view.m13 * projection.m4 + model_view.m14 * projection.m8 +
-        model_view.m15 * projection.m12
-    plane.m13 = model_view.m12 * projection.m1 + model_view.m13 * projection.m5 + model_view.m14 * projection.m9 +
-        model_view.m15 * projection.m13
-    plane.m14 = model_view.m12 * projection.m2 + model_view.m13 * projection.m6 + model_view.m14 * projection.m10 +
-        model_view.m15 * projection.m14
-    plane.m15 = model_view.m12 * projection.m3 + model_view.m13 * projection.m7 + model_view.m14 * projection.m11 +
-        model_view.m15 * projection.m15
-
-    -- r. plane.
-    self.frustum[5]:set(plane.m3 - plane.m0, plane.m7 - plane.m4, plane.m11 - plane.m8, plane.m15 - plane.m12)
-    self.frustum[5]:copy(self.frustum[5]:normalize())
-
-    -- l. plane.
-    self.frustum[6]:set(plane.m3 + plane.m0, plane.m7 + plane.m4, plane.m11 + plane.m8, plane.m15 + plane.m12)
-    self.frustum[6]:copy(self.frustum[6]:normalize())
-
-    -- t. plane.
-    self.frustum[4]:set(plane.m3 - plane.m1, plane.m7 - plane.m5, plane.m11 - plane.m9, plane.m15 - plane.m13)
-    self.frustum[4]:copy(self.frustum[4]:normalize())
-
-    -- b. plane.
-    self.frustum[3]:set(plane.m3 + plane.m1, plane.m7 + plane.m5, plane.m11 + plane.m9, plane.m15 + plane.m13)
-    self.frustum[3]:copy(self.frustum[3]:normalize())
-
-    -- back plane.
-    self.frustum[1]:set(plane.m3 - plane.m2, plane.m7 - plane.m6, plane.m11 - plane.m10, plane.m15 - plane.m14)
-    self.frustum[1]:copy(self.frustum[1]:normalize())
-
-    -- front plane.
-    self.frustum[2]:set(plane.m3 + plane.m2, plane.m7 + plane.m6, plane.m11 + plane.m10, plane.m15 + plane.m14)
-    self.frustum[2]:copy(self.frustum[2]:normalize())
-end
-
-function scene:distance_to_plane(plane, point)
-    return plane.x * point.x + plane.y * point.y + plane.z * point.z + plane.w
-end
-
-function scene:point_in_frustum(point)
-    for _, plane in ipairs(self.frustum) do
-        if self:distance_to_plane(plane, point) <= 0.0 then
-            return false
-        end
-    end
-
-    return true
-end
-
-function scene:sphere_in_frustum(point, radius)
-    for _, plane in ipairs(self.frustum) do
-        if self:distance_to_plane(plane, point) < -radius then
-            return false
-        end
-    end
-
-    return true
-end
-
-function scene:box_3_in_frustum(shape)
-    local point = vector_3:old(0.0, 0.0, 0.0)
-
-    -- if any point is in and we are good
-    if (self:point_in_frustum(point:set(shape.min.x, shape.min.y, shape.min.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.min.x, shape.max.y, shape.min.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.max.x, shape.max.y, shape.min.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.max.x, shape.min.y, shape.min.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.min.x, shape.min.y, shape.max.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.min.x, shape.max.y, shape.max.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.max.x, shape.max.y, shape.max.z))) then return true end
-    if (self:point_in_frustum(point:set(shape.max.x, shape.min.y, shape.max.z))) then return true end
-
-    -- check to see if all points are outside of any one plane, if so the entire box is outside
-    for _, plane in ipairs(self.frustum) do
-        local oneInside = false
-
-        if (self:distance_to_plane(plane, point:set(shape.min.x, shape.min.y, shape.min.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.max.x, shape.min.y, shape.min.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.max.x, shape.max.y, shape.min.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.min.x, shape.max.y, shape.min.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.min.x, shape.min.y, shape.max.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.max.x, shape.min.y, shape.max.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.max.x, shape.max.y, shape.max.z)) >= 0) then oneInside = true end
-        if (self:distance_to_plane(plane, point:set(shape.min.x, shape.max.y, shape.max.z)) >= 0) then oneInside = true end
-
-        if (not oneInside) then
-            return false
-        end
-    end
-
-    -- the box extends outside the frustum but crosses it
-    return true
 end
 
 local LIGHT_MAXIMUM = 32.0

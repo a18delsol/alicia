@@ -118,7 +118,19 @@ impl Model {
             let data = ffi::LoadModel(name.as_ptr());
 
             if ffi::IsModelValid(data) {
-                Ok(Self(RLModel::from_raw(data)))
+                let mut data = RLModel::from_raw(data);
+
+                for material in data.materials_mut() {
+                    for map in material.maps_mut() {
+                        ffi::GenTextureMipmaps(&mut map.texture);
+                        ffi::SetTextureFilter(
+                            map.texture,
+                            ffi::TextureFilter::TEXTURE_FILTER_BILINEAR as i32,
+                        );
+                    }
+                }
+
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
                     "Model::new(): Could not load file \"{path}\"."

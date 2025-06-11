@@ -133,14 +133,16 @@ function table.copy(value, work)
     return work
 end
 
----Print every key/value pair in a table.
+---Return every key/value pair in a table as a string.
 ---@param value table # Table to print.
-function table.print(value, depth)
+function table.as_string(value, depth)
     if not depth then
         depth = 1.0
     end
 
-    print("{")
+    local result = ""
+
+    result = "{\n"
 
     for k, v in pairs(value) do
         local k = type(k) == "number" and string.format("[%d]", k) or k
@@ -150,14 +152,16 @@ function table.print(value, depth)
             i = i .. "  "
         end
 
-        print(i .. tostring(k) .. " = " .. tostring(v))
+        result = result .. i .. tostring(k) .. " = " .. tostring(v) .. "\n"
 
         if type(v) == "table" then
-            table.print(v, depth + 1.0)
+            result = result .. table.as_string(v, depth + 1.0)
         end
     end
 
-    print("}")
+    result = result .. "}\n"
+
+    return result
 end
 
 ---Check if an object is within a table.

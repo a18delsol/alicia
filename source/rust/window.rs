@@ -48,7 +48,7 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-use crate::{script::Script, status::*};
+use crate::{base, script::Script, status::*};
 
 //================================================================
 
@@ -232,12 +232,38 @@ impl Window {
                 Vector2::new(20.0, 12.0),
                 Self::COLOR_TEXT_WHITE,
             );
-            self.font(
-                &mut draw,
-                text,
-                Vector2::new(20.0, 72.0),
-                Self::COLOR_TEXT_BLACK,
-            );
+
+            unsafe {
+                let font: ffi::Font = (*self.font).into();
+                let font: base::helper::Font = std::mem::transmute(font);
+
+                base::helper::DrawTextBoxed(
+                    font,
+                    Script::rust_to_c_string(text).unwrap().as_ptr(),
+                    base::helper::Rectangle {
+                        x: 20.0,
+                        y: 72.0,
+                        width: draw_shape.x - 40.0,
+                        height: draw_shape.y - 244.0,
+                    },
+                    Self::TEXT_SHAPE,
+                    Self::TEXT_SPACE,
+                    true,
+                    base::helper::Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    },
+                );
+            }
+
+            //self.font(
+            //    &mut draw,
+            //    text,
+            //    Vector2::new(20.0, 72.0),
+            //    Self::COLOR_TEXT_BLACK,
+            //);
 
             // button footer.
             self.point(Vector2::new(20.0, draw_shape.y - 136.0));
