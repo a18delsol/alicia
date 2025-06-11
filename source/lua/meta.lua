@@ -1231,7 +1231,7 @@ alicia.texture = {}
 ---An unique handle for a texture in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L218)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L219)
 ---@class texture
 ---@field shape_x number # Shape of the texture (X).
 ---@field shape_y number # Shape of the texture (Y).
@@ -1240,33 +1240,33 @@ texture = {}
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L246)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L247)
 function texture:to_image() end
 
 ---Set the mipmap for a texture.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L259)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L261)
 function texture:set_mipmap() end
 
 ---Set the filter for a texture.
 ---@param filter texture_filter # LuaTexture filter.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L276)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L278)
 function texture:set_filter(filter) end
 
 ---Set the wrap for a texture.
 ---@param wrap texture_wrap # LuaTexture wrap.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L293)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L295)
 function texture:set_wrap(wrap) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L307)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L309)
 function texture:draw_plane() end
 
 ---Draw a texture.
@@ -1276,7 +1276,7 @@ function texture:draw_plane() end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L339)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L341)
 function texture:draw(point,angle,scale,color) end
 
 ---Draw a texture (pro).
@@ -1287,7 +1287,7 @@ function texture:draw(point,angle,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L360)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L362)
 function texture:draw_pro(box_a,box_b,point,angle,color) end
 
 ---Draw a billboard texture.
@@ -1297,7 +1297,7 @@ function texture:draw_pro(box_a,box_b,point,angle,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L391)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L393)
 function texture:draw_billboard(camera,point,scale,color) end
 
 ---Draw a billboard texture (pro).
@@ -1311,7 +1311,7 @@ function texture:draw_billboard(camera,point,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L420)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L422)
 function texture:draw_billboard_pro(camera,source,point,up,scale,origin,angle,color) end
 
 ---Create a new texture resource.
@@ -1319,19 +1319,19 @@ function texture:draw_billboard_pro(camera,source,point,up,scale,origin,angle,co
 ---@return texture texture # LuaTexture resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L459)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L461)
 function alicia.texture.new(path) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L483)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L486)
 function alicia.texture.new_from_memory() end
 
 ---An unique handle for a render texture in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L526)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L529)
 ---@class render_texture
 ---@field shape_x number # Shape of the texture (X).
 ---@field shape_y number # Shape of the texture (Y).
@@ -1341,13 +1341,13 @@ render_texture = {}
 ---@param call function # The draw code.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L556)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L559)
 function render_texture:begin(call) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L577)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L580)
 function render_texture:draw_plane() end
 
 ---Draw a texture.
@@ -1357,7 +1357,7 @@ function render_texture:draw_plane() end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L617)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L620)
 function render_texture:draw(point,angle,scale,color) end
 
 ---Draw a texture (pro).
@@ -1368,7 +1368,7 @@ function render_texture:draw(point,angle,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L641)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L644)
 function render_texture:draw_pro(box_a,box_b,point,angle,color) end
 
 ---Create a new render texture resource.
@@ -1376,7 +1376,7 @@ function render_texture:draw_pro(box_a,box_b,point,angle,color) end
 ---@return render_texture render_texture # Render texture resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L675)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L678)
 function alicia.render_texture.new(shape) end
 
 ---The ZIP API.
@@ -1514,7 +1514,7 @@ function model:draw_transform(point,angle,scale,color) end
 ---@return number max_z # Maximum vector. (Z)
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L365)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L366)
 function model:get_box_3() end
 
 ---Get the vertex data of a specific mesh in the model.
@@ -1522,7 +1522,7 @@ function model:get_box_3() end
 ---@return table table # Vector3 table.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L390)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L391)
 function model:mesh_vertex(index) end
 
 ---Get the index data of a specific mesh in the model.
@@ -1530,7 +1530,7 @@ function model:mesh_vertex(index) end
 ---@return table table # Number table.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L413)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L414)
 function model:mesh_index(index) end
 
 ---Get the triangle count of a specific mesh in the model.
@@ -1538,13 +1538,13 @@ function model:mesh_index(index) end
 ---@return number count # Triangle count.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L436)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L437)
 function model:mesh_triangle_count(index) end
 
 ---An unique handle for a model animation in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L451)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L452)
 ---@class model_animation
 model_animation = {}
 
@@ -1553,19 +1553,19 @@ model_animation = {}
 ---@return model_animation model_animation # ModelAnimation resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L468)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L469)
 function alicia.model_animation.new(path) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L511)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L513)
 function model_animation:get_bone_() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L527)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L530)
 function model_animation:get_bone_() end
 
 ---Update model with new model animation data.
@@ -1573,7 +1573,7 @@ function model_animation:get_bone_() end
 ---@param frame number # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L551)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L555)
 function model_animation:update(model,frame) end
 
 ---The drawing API.
@@ -2973,7 +2973,7 @@ function shader:get_location_name(name) end
 ---@return number location # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L233)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L234)
 function shader:get_location_attribute_name(name) end
 
 ---TO-DO
@@ -2981,7 +2981,7 @@ function shader:get_location_attribute_name(name) end
 ---@return number location # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L252)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L254)
 function shader:get_location(location) end
 
 ---TO-DO
@@ -2989,7 +2989,7 @@ function shader:get_location(location) end
 ---@param value number # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L269)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L272)
 function shader:set_location(location,value) end
 
 ---TO-DO
@@ -2998,7 +2998,7 @@ function shader:set_location(location,value) end
 ---@param value any # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L291)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L295)
 function shader:set_shader_value(location,kind,value) end
 
 ---The image API.

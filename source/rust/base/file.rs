@@ -135,8 +135,6 @@ impl FileWatcher {
     fn new(lua: &Lua, path: String) -> mlua::Result<Self> {
         let path = ScriptData::get_path(lua, &path)?;
 
-        println!("creating FW: {path}");
-
         let (tx_a, rx_a) = std::sync::mpsc::channel();
         let (tx, rx) = std::sync::mpsc::channel();
         // use the PollWatcher and disable automatic polling

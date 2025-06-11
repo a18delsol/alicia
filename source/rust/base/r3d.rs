@@ -110,6 +110,9 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, script_info: O
     // R3D_SetAmbientColor
     r3d.set("set_base_color", lua.create_function(self::set_base_color)?)?;
 
+    // R3D_IsPointInFrustum
+    r3d.set("get_point_frustum", lua.create_function(self::get_point_frustum)?)?;
+
     //================================================================
 
     let light = lua.create_table()?;
@@ -165,6 +168,10 @@ fn set_base_color(lua: &Lua, color: LuaValue) -> mlua::Result<()> {
         R3D_SetAmbientColor(lua.from_value(color)?);
         Ok(())
     }
+}
+
+fn get_point_frustum(lua: &Lua, point: LuaValue) -> mlua::Result<bool> {
+    unsafe { Ok(R3D_IsPointInFrustum(lua.from_value(point)?)) }
 }
 
 //================================================================

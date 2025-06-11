@@ -164,19 +164,7 @@ impl Script {
             }
         };
 
-        unsafe {
-            // this is causing lua to be unable to load main.lua initially...?
-            println!(
-                "----> pre: {}",
-                Self::c_to_rust_string(GetWorkingDirectory())?
-            );
             std::env::set_current_dir(&status_info.path).unwrap();
-            //ChangeDirectory(Script::rust_to_c_string(&status_info.path)?.as_ptr());
-            println!(
-                "----> post: {}",
-                Self::c_to_rust_string(GetWorkingDirectory())?
-            );
-        }
 
         let alicia = Self::set_environment(&lua, status_info)?;
 

@@ -139,6 +139,22 @@ impl LuaModel {
 
             for x in 0..data.materialCount {
                 let mut m = *data.materials.wrapping_add(x as usize);
+
+                for i in 0..12 {
+                    let mut map = *m.maps.wrapping_add(i);
+
+                    if IsTextureValid(map.texture) {
+                        // apparently every model is also bound to the internal RL texture? what?
+                        if map.texture.id != 1 {
+                            GenTextureMipmaps(&mut map.texture);
+                            SetTextureFilter(
+                                map.texture,
+                                TextureFilter_TEXTURE_FILTER_BILINEAR as i32,
+                            );
+                        }
+                    }
+                }
+
                 let mut a = *m.maps.wrapping_add(0);
                 a.color = Color {
                     r: 255,
