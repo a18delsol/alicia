@@ -52,11 +52,10 @@ use crate::{base, script::Script, status::*};
 
 //================================================================
 
-//use raylib::prelude::*;
+use crate::base::helper::*;
 
 //================================================================
 
-/*
 // window structure, responsible for drawing the missing/failure interface.
 pub struct Window {
     data: [gizmo::Data; Self::GIZMO_COUNT],
@@ -68,16 +67,41 @@ pub struct Window {
 }
 
 impl Window {
-    const COLOR_PRIMARY_MAIN: Color = Color::new(156, 39, 176, 255);
-    const COLOR_TEXT_WHITE: Color = Color::new(255, 255, 255, 255);
-    const COLOR_TEXT_BLACK: Color = Color::new(33, 33, 33, 255);
+    const COLOR_PRIMARY_MAIN: Color = Color {
+        r: 156,
+        g: 39,
+        b: 176,
+        a: 255,
+    };
+    const COLOR_TEXT_WHITE: Color = Color {
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 255,
+    };
+    const COLOR_TEXT_BLACK: Color = Color {
+        r: 33,
+        g: 33,
+        b: 33,
+        a: 255,
+    };
 
     //================================================================
 
     const GRADIENT_POINT_Y: f32 = 4.0;
     const GRADIENT_SHAPE_Y: i32 = 6;
-    const GRADIENT_COLOR_MAX: Color = Color::new(0, 0, 0, 99);
-    const GRADIENT_COLOR_MIN: Color = Color::new(0, 0, 0, 0);
+    const GRADIENT_COLOR_MAX: Color = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 99,
+    };
+    const GRADIENT_COLOR_MIN: Color = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 0,
+    };
 
     //================================================================
 
@@ -95,8 +119,8 @@ impl Window {
 
     //================================================================
 
-    const BUTTON_SHAPE: Vector2 = Vector2::new(160.0, 32.0);
-    const BUTTON_TEXT_SHIFT: Vector2 = Vector2::new(8.0, 4.0);
+    const BUTTON_SHAPE: Vector2 = Vector2 { x: 160.0, y: 32.0 };
+    const BUTTON_TEXT_SHIFT: Vector2 = Vector2 { x: 8.0, y: 4.0 };
     const BUTTON_SHIFT: f32 = 8.0;
 
     //================================================================
@@ -106,67 +130,97 @@ impl Window {
     //================================================================
 
     // get a new window instance.
-    pub fn new(handle: &mut RaylibHandle, thread: &RaylibThread) -> Self {
+    pub fn new() -> Self {
         // load font.
-        let font = handle
-            .load_font_from_memory(thread, ".ttf", Status::FONT, Self::TEXT_SHAPE as i32, None)
-            .map_err(|e| Status::panic(&e.to_string()))
-            .unwrap();
+        let font = unsafe {
+            LoadFontFromMemory(
+                Script::rust_to_c_string(".ttf").unwrap().as_ptr(),
+                Status::FONT.as_ptr(),
+                Status::FONT.len() as i32,
+                Self::TEXT_SHAPE as i32,
+                core::ptr::null_mut(),
+                0,
+            )
+        };
 
         // load logo.
-        let logo = handle
-            .load_texture_from_image(
-                thread,
-                &Image::load_image_from_mem(".png", Status::LOGO)
-                    .map_err(|e| Status::panic(&e.to_string()))
-                    .unwrap(),
-            )
-            .map_err(|e| Status::panic(&e.to_string()))
-            .unwrap();
+        let logo = unsafe {
+            let image = LoadImageFromMemory(
+                Script::rust_to_c_string(".png").unwrap().as_ptr(),
+                Status::LOGO.as_ptr(),
+                Status::LOGO.len() as i32,
+            );
+
+            LoadTextureFromImage(image)
+        };
 
         Self {
             data: [gizmo::Data::default(); Self::GIZMO_COUNT],
             font,
             logo,
-            point: Vector2::default(),
+            point: Vector2 { x: 0.0, y: 0.0 },
             focus: None,
             count: i32::default(),
         }
     }
 
     // draw missing window layout.
-    pub async fn missing(
-        &mut self,
-        handle: &mut RaylibHandle,
-        thread: &RaylibThread,
-    ) -> Option<Status> {
-        while !handle.window_should_close() {
-            let draw_shape = Vector2::new(
-                handle.get_screen_width() as f32,
-                handle.get_screen_height() as f32,
-            );
-            let logo_shape = Vector2::new(self.logo.width as f32, self.logo.height as f32);
-            let logo_point = Vector2::new(
-                (draw_shape.x * 0.5) - (logo_shape.x * 0.5),
-                (draw_shape.y * 0.5) - (logo_shape.y * 0.5) - (Self::LOGO_SHAPE * 0.5),
-            );
-            let card_shape =
-                Rectangle::new(0.0, 0.0, draw_shape.x, draw_shape.y - Self::LOGO_SHAPE);
+    pub async fn missing(&mut self) -> Option<Status> {
+        while unsafe { !WindowShouldClose() } {
+            let draw_shape = Vector2 {
+                x: unsafe { GetScreenWidth() as f32 },
+                y: unsafe { GetScreenHeight() as f32 },
+            };
+            let logo_shape = Vector2 {
+                x: self.logo.width as f32,
+                y: self.logo.height as f32,
+            };
+            let logo_point = Vector2 {
+                x: (draw_shape.x * 0.5) - (logo_shape.x * 0.5),
+                y: (draw_shape.y * 0.5) - (logo_shape.y * 0.5) - (Self::LOGO_SHAPE * 0.5),
+            };
+            let card_shape = Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: draw_shape.x,
+                height: draw_shape.y - Self::LOGO_SHAPE,
+            };
 
             // begin drawing, clear screen, begin window frame.
-            let mut draw = handle.begin_drawing(thread);
-            draw.clear_background(Color::WHITE);
+            unsafe {
+                BeginDrawing();
+                ClearBackground(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                });
+            }
             self.begin();
 
             // card header.
-            self.card_sharp(&mut draw, card_shape, Window::COLOR_PRIMARY_MAIN);
-            draw.draw_texture_v(&self.logo, logo_point, Color::WHITE);
+            self.card_sharp(card_shape, Window::COLOR_PRIMARY_MAIN);
+            unsafe {
+                DrawTextureV(
+                    self.logo,
+                    logo_point,
+                    Color {
+                        r: 255,
+                        g: 255,
+                        b: 255,
+                        a: 255,
+                    },
+                );
+            }
 
             // button footer.
-            self.point(Vector2::new(20.0, draw_shape.y - Self::LOGO_SHAPE + 24.0));
+            self.point(Vector2 {
+                x: 20.0,
+                y: draw_shape.y - Self::LOGO_SHAPE + 24.0,
+            });
 
             // create a new info file for a project, which doesn't exist yet.
-            if self.button(&mut draw, "New Project") {
+            if self.button("New Project") {
                 let path = std::env::current_dir()
                     .map_err(|e| Status::panic(&e.to_string()))
                     .unwrap();
@@ -176,13 +230,15 @@ impl Window {
                 if let Some(project) = project {
                     Script::new_project(&project.display().to_string());
 
-                    drop(draw);
+                    unsafe {
+                        EndDrawing();
+                    }
                     return Some(Status::new().await);
                 }
             }
 
             // create a new info file for a project.
-            if self.button(&mut draw, "Load Project") {
+            if self.button("Load Project") {
                 let path = std::env::current_dir()
                     .map_err(|e| Status::panic(&e.to_string()))
                     .unwrap();
@@ -192,13 +248,15 @@ impl Window {
                 if let Some(project) = project {
                     Script::load_project(&project.display().to_string());
 
-                    drop(draw);
+                    unsafe {
+                        EndDrawing();
+                    }
                     return Some(Status::new().await);
                 }
             }
 
             // exit Alicia.
-            if self.button(&mut draw, "Exit Alicia") {
+            if self.button("Exit Alicia") {
                 return Some(Status::Closure);
             }
         }
@@ -207,39 +265,42 @@ impl Window {
     }
 
     // draw failure window layout.
-    pub async fn failure(
-        &mut self,
-        handle: &mut RaylibHandle,
-        thread: &RaylibThread,
-        text: &str,
-    ) -> Option<Status> {
-        while !handle.window_should_close() {
-            let draw_shape = Vector2::new(
-                handle.get_screen_width() as f32,
-                handle.get_screen_height() as f32,
-            );
-            let card_shape = Rectangle::new(0.0, 0.0, draw_shape.x, 48.0);
+    pub async fn failure(&mut self, text: &str) -> Option<Status> {
+        while unsafe { !WindowShouldClose() } {
+            let draw_shape = Vector2 {
+                x: unsafe { GetScreenWidth() as f32 },
+                y: unsafe { GetScreenHeight() as f32 },
+            };
+            let card_shape = Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: draw_shape.x,
+                height: 48.0,
+            };
 
             // begin drawing, clear screen, begin window frame.
-            let mut draw = handle.begin_drawing(thread);
-            draw.clear_background(Color::WHITE);
+            unsafe {
+                BeginDrawing();
+                ClearBackground(Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                });
+            }
             self.begin();
 
             // card header.
-            self.card_sharp(&mut draw, card_shape, Window::COLOR_PRIMARY_MAIN);
+            self.card_sharp(card_shape, Window::COLOR_PRIMARY_MAIN);
             self.font(
-                &mut draw,
                 "Fatal Error",
-                Vector2::new(20.0, 12.0),
+                Vector2 { x: 20.0, y: 12.0 },
                 Self::COLOR_TEXT_WHITE,
             );
 
             unsafe {
-                let font: ffi::Font = (*self.font).into();
-                let font: base::helper::Font = std::mem::transmute(font);
-
-                base::helper::DrawTextBoxed(
-                    font,
+                DrawTextBoxed(
+                    self.font,
                     Script::rust_to_c_string(text).unwrap().as_ptr(),
                     base::helper::Rectangle {
                         x: 20.0,
@@ -267,24 +328,36 @@ impl Window {
             //);
 
             // button footer.
-            self.point(Vector2::new(20.0, draw_shape.y - 136.0));
+            self.point(Vector2 {
+                x: 20.0,
+                y: draw_shape.y - 136.0,
+            });
 
             // reload Alicia.
-            if self.button(&mut draw, "Load Project") {
-                drop(draw);
+            if self.button("Load Project") {
+                unsafe {
+                    EndDrawing();
+                }
                 return Some(Status::new().await);
             }
 
             // copy report to clipboard.
-            if self.button(&mut draw, "Copy Report") {
-                draw.set_clipboard_text(text)
-                    .map_err(|e| Status::panic(&e.to_string()))
-                    .unwrap();
+            if self.button("Copy Report") {
+                unsafe {
+                    SetClipboardText(Script::rust_to_c_string(text).unwrap().as_ptr());
+                }
             }
 
             // exit Alicia.
-            if self.button(&mut draw, "Exit Alicia") {
+            if self.button("Exit Alicia") {
+                unsafe {
+                    EndDrawing();
+                }
                 return Some(Status::Closure);
+            }
+
+            unsafe {
+                EndDrawing();
             }
         }
 
@@ -295,7 +368,7 @@ impl Window {
 
     // begin a new frame for the window.
     fn begin(&mut self) {
-        self.point = Vector2::default();
+        self.point = Vector2 { x: 0.0, y: 0.0 };
         self.count = i32::default();
     }
 
@@ -305,73 +378,71 @@ impl Window {
     }
 
     // draw a card with a drop shadow (sharp).
-    fn card_sharp(&self, draw: &mut RaylibDrawHandle, rectangle: Rectangle, color: Color) {
-        draw.draw_rectangle_gradient_v(
-            rectangle.x as i32,
-            (rectangle.y + rectangle.height) as i32,
-            rectangle.width as i32,
-            Self::GRADIENT_SHAPE_Y,
-            Self::GRADIENT_COLOR_MAX,
-            Self::GRADIENT_COLOR_MIN,
-        );
+    fn card_sharp(&self, rectangle: Rectangle, color: Color) {
+        unsafe {
+            DrawRectangleGradientV(
+                rectangle.x as i32,
+                (rectangle.y + rectangle.height) as i32,
+                rectangle.width as i32,
+                Self::GRADIENT_SHAPE_Y,
+                Self::GRADIENT_COLOR_MAX,
+                Self::GRADIENT_COLOR_MIN,
+            );
 
-        draw.draw_rectangle_rec(rectangle, color);
+            DrawRectangleRec(rectangle, color);
+        }
     }
 
     // draw a card with a drop shadow (round).
-    fn card_round(&self, draw: &mut RaylibDrawHandle, rectangle: Rectangle, color: Color) {
-        draw.draw_rectangle_gradient_v(
-            rectangle.x as i32,
-            (rectangle.y + rectangle.height - Self::GRADIENT_POINT_Y) as i32,
-            rectangle.width as i32,
-            Self::GRADIENT_SHAPE_Y + Self::GRADIENT_POINT_Y as i32,
-            Self::GRADIENT_COLOR_MAX,
-            Self::GRADIENT_COLOR_MIN,
-        );
+    fn card_round(&self, rectangle: Rectangle, color: Color) {
+        unsafe {
+            DrawRectangleGradientV(
+                rectangle.x as i32,
+                (rectangle.y + rectangle.height - Self::GRADIENT_POINT_Y) as i32,
+                rectangle.width as i32,
+                Self::GRADIENT_SHAPE_Y + Self::GRADIENT_POINT_Y as i32,
+                Self::GRADIENT_COLOR_MAX,
+                Self::GRADIENT_COLOR_MIN,
+            );
 
-        draw.draw_rectangle_rounded(
-            rectangle,
-            Self::CARD_ROUND_SHAPE,
-            Self::CARD_ROUND_COUNT,
-            color,
-        );
+            DrawRectangleRounded(
+                rectangle,
+                Self::CARD_ROUND_SHAPE,
+                Self::CARD_ROUND_COUNT,
+                color,
+            );
+        }
     }
 
     // draw a button.
-    fn button(&mut self, draw: &mut RaylibDrawHandle, text: &str) -> bool {
+    fn button(&mut self, text: &str) -> bool {
         // get the point and shape of the gizmo.
-        let rectangle = Rectangle::new(
-            self.point.x,
-            self.point.y,
-            Self::BUTTON_SHAPE.x,
-            Self::BUTTON_SHAPE.y,
-        );
+        let rectangle = Rectangle {
+            x: self.point.x,
+            y: self.point.y,
+            width: Self::BUTTON_SHAPE.x,
+            height: Self::BUTTON_SHAPE.y,
+        };
 
         // get state, and data of the widget.
-        let state = gizmo::State::get(self, draw, rectangle);
+        let state = gizmo::State::get(self, rectangle);
         let data = gizmo::Data::get_mutable(self);
-        data.set_hover(draw, state.hover);
-        data.set_focus(draw, state.focus);
+        data.set_hover(state.hover);
+        data.set_focus(state.focus);
         let data = gizmo::Data::get(self);
 
         // get location of text.
-        let text_point = Vector2::new(
-            rectangle.x + Self::BUTTON_TEXT_SHIFT.x,
-            rectangle.y + Self::BUTTON_TEXT_SHIFT.y - data.get_point(),
-        );
+        let text_point = Vector2 {
+            x: rectangle.x + Self::BUTTON_TEXT_SHIFT.x,
+            y: rectangle.y + Self::BUTTON_TEXT_SHIFT.y - data.get_point(),
+        };
 
         // draw card and text.
         self.card_round(
-            draw,
             data.get_shape(&rectangle),
             data.get_color(&Window::COLOR_PRIMARY_MAIN),
         );
-        self.font(
-            draw,
-            text,
-            text_point,
-            data.get_color(&Self::COLOR_TEXT_WHITE),
-        );
+        self.font(text, text_point, data.get_color(&Self::COLOR_TEXT_WHITE));
 
         // increment the point of the next gizmo.
         self.point.y += Self::BUTTON_SHAPE.y + Self::BUTTON_SHIFT;
@@ -381,15 +452,17 @@ impl Window {
     }
 
     // draw text.
-    fn font(&self, draw: &mut RaylibDrawHandle, text: &str, point: Vector2, color: Color) {
-        draw.draw_text_ex(
-            &self.font,
-            text,
-            point,
-            Self::TEXT_SHAPE,
-            Self::TEXT_SPACE,
-            color,
-        );
+    fn font(&self, text: &str, point: Vector2, color: Color) {
+        unsafe {
+            DrawTextEx(
+                self.font,
+                Script::rust_to_c_string(text).unwrap().as_ptr(),
+                point,
+                Self::TEXT_SHAPE,
+                Self::TEXT_SPACE,
+                color,
+            );
+        }
     }
 }
 
@@ -405,16 +478,16 @@ pub mod gizmo {
 
     impl State {
         // get the state of a gizmo.
-        pub fn get(window: &mut Window, draw: &RaylibDrawHandle, rectangle: Rectangle) -> Self {
+        pub fn get(window: &mut Window, rectangle: Rectangle) -> Self {
             let mut state = State::default();
             // check if the cursor is over the gizmo's shape.
-            let hover = rectangle.check_collision_point_rec(draw.get_mouse_position());
+            let hover = unsafe { CheckCollisionPointRec(GetMousePosition(), rectangle) };
 
             // cursor is currently over the gizmo...
             if hover {
                 // no focus is set, and the mouse button has been set off, set current gizmo as the focus.
                 if window.focus.is_none()
-                    && draw.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT)
+                    && unsafe { IsMouseButtonPressed(MouseButton_MOUSE_BUTTON_LEFT as i32) }
                 {
                     window.focus = Some(window.count);
                 }
@@ -428,7 +501,7 @@ pub mod gizmo {
                 // current gizmo is the current focus!
                 if focus == window.count {
                     // the mouse button has been set off...
-                    if draw.is_mouse_button_released(MouseButton::MOUSE_BUTTON_LEFT) {
+                    if unsafe { IsMouseButtonReleased(MouseButton_MOUSE_BUTTON_LEFT as i32) } {
                         // if the mouse was hovering over the gizmo, set off click event.
                         if hover {
                             state.click = true;
@@ -483,45 +556,48 @@ pub mod gizmo {
 
         // get a shape depending on the value of hover.
         pub fn get_shape(&self, rectangle: &Rectangle) -> Rectangle {
-            Rectangle::new(
-                rectangle.x,
-                rectangle.y - self.get_point(),
-                rectangle.width,
-                rectangle.height,
-            )
+            Rectangle {
+                x: rectangle.x,
+                y: rectangle.y - self.get_point(),
+                width: rectangle.width,
+                height: rectangle.height,
+            }
         }
 
         // get a color depending on the value of hover.
         pub fn get_color(&self, color: &Color) -> Color {
-            Color::new(
-                (color.r as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
-                (color.g as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
-                (color.b as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
-                color.a,
-            )
+            Color {
+                r: (color.r as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
+                g: (color.g as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
+                b: (color.b as f32 * ((self.hover * Self::COLOR_UPPER) + Self::COLOR_LOWER)) as u8,
+                a: color.a,
+            }
         }
 
         // adjust the hover variable.
-        pub fn set_hover(&mut self, draw: &RaylibDrawHandle, value: bool) {
+        pub fn set_hover(&mut self, value: bool) {
+            let frame = unsafe { GetFrameTime() };
+
             if value {
-                self.hover += draw.get_frame_time() * Self::HOVER_SPEED;
+                self.hover += frame * Self::HOVER_SPEED;
             } else {
-                self.hover -= draw.get_frame_time() * Self::HOVER_SPEED;
+                self.hover -= frame * Self::HOVER_SPEED;
             }
 
             self.hover = self.hover.clamp(0.0, 1.0);
         }
 
         // adjust the focus variable.
-        pub fn set_focus(&mut self, draw: &RaylibDrawHandle, value: bool) {
+        pub fn set_focus(&mut self, value: bool) {
+            let frame = unsafe { GetFrameTime() };
+
             if value {
-                self.focus += draw.get_frame_time() * Self::FOCUS_SPEED;
+                self.focus += frame * Self::FOCUS_SPEED;
             } else {
-                self.focus -= draw.get_frame_time() * Self::FOCUS_SPEED;
+                self.focus -= frame * Self::FOCUS_SPEED;
             }
 
             self.focus = self.focus.clamp(0.0, 1.0);
         }
     }
 }
-*/

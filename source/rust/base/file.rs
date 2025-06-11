@@ -55,8 +55,8 @@ use std::thread::JoinHandle;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -489,7 +489,7 @@ unsafe extern "C" fn call_load_text(file_name: *const i8) -> *mut i8 {
 */
 fn set_call_save_file(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
     unsafe {
-        ffi::SetSaveFileDataCallback(Some(call_save_file));
+        SetSaveFileDataCallback(Some(call_save_file));
 
         CALL_SAVE_FILE = Some(call);
 
@@ -509,7 +509,7 @@ fn set_call_save_file(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
 */
 fn set_call_load_file(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
     unsafe {
-        ffi::SetLoadFileDataCallback(Some(call_load_file));
+        SetLoadFileDataCallback(Some(call_load_file));
 
         CALL_LOAD_FILE = Some(call);
 
@@ -529,7 +529,7 @@ fn set_call_load_file(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
 */
 fn set_call_save_text(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
     unsafe {
-        ffi::SetSaveFileTextCallback(Some(call_save_text));
+        SetSaveFileTextCallback(Some(call_save_text));
 
         CALL_SAVE_TEXT = Some(call);
 
@@ -549,7 +549,7 @@ fn set_call_save_text(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
 */
 fn set_call_load_text(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
     unsafe {
-        ffi::SetLoadFileTextCallback(Some(call_load_text));
+        SetLoadFileTextCallback(Some(call_load_text));
 
         CALL_LOAD_TEXT = Some(call);
 
@@ -574,7 +574,7 @@ fn set_call_load_text(_: &Lua, call: mlua::Function) -> mlua::Result<()> {
 fn get_file_exist(lua: &Lua, path: String) -> mlua::Result<bool> {
     let path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
-    unsafe { Ok(ffi::FileExists(path.as_ptr())) }
+    unsafe { Ok(FileExists(path.as_ptr())) }
 }
 
 /* entry
@@ -594,7 +594,7 @@ fn get_file_exist(lua: &Lua, path: String) -> mlua::Result<bool> {
 fn get_path_exist(lua: &Lua, path: String) -> mlua::Result<bool> {
     let path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
-    unsafe { Ok(ffi::DirectoryExists(path.as_ptr())) }
+    unsafe { Ok(DirectoryExists(path.as_ptr())) }
 }
 
 /* entry
@@ -616,7 +616,7 @@ fn get_file_extension_check(lua: &Lua, (path, extension): (String, String)) -> m
     let extension =
         Script::rust_to_c_string(&extension).map_err(|e| mlua::Error::runtime(e.to_string()))?;
 
-    unsafe { Ok(ffi::IsFileExtension(path.as_ptr(), extension.as_ptr())) }
+    unsafe { Ok(IsFileExtension(path.as_ptr(), extension.as_ptr())) }
 }
 
 /* entry
@@ -635,7 +635,7 @@ fn get_file_extension_check(lua: &Lua, (path, extension): (String, String)) -> m
 fn get_file_size(lua: &Lua, path: String) -> mlua::Result<i32> {
     let path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
-    unsafe { Ok(ffi::GetFileLength(path.as_ptr())) }
+    unsafe { Ok(GetFileLength(path.as_ptr())) }
 }
 
 /* entry
@@ -655,7 +655,7 @@ fn get_file_extension(lua: &Lua, path: String) -> mlua::Result<String> {
     let path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
     unsafe {
-        let result = ffi::GetFileExtension(path.as_ptr());
+        let result = GetFileExtension(path.as_ptr());
         Script::c_to_rust_string(result)
     }
 }
@@ -679,10 +679,10 @@ fn get_file_name(lua: &Lua, (path, extension): (String, bool)) -> mlua::Result<S
 
     unsafe {
         if extension {
-            let result = ffi::GetFileName(path.as_ptr());
+            let result = GetFileName(path.as_ptr());
             Script::c_to_rust_string(result)
         } else {
-            let result = ffi::GetFileNameWithoutExt(path.as_ptr());
+            let result = GetFileNameWithoutExt(path.as_ptr());
             Script::c_to_rust_string(result)
         }
     }
@@ -697,7 +697,7 @@ fn get_file_name(lua: &Lua, (path, extension): (String, bool)) -> mlua::Result<S
 */
 fn get_absolute_path(lua: &Lua, path: String) -> mlua::Result<String> {
     unsafe {
-        let value = ffi::GetDirectoryPath(
+        let value = GetDirectoryPath(
             Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr(),
         );
 
@@ -714,7 +714,7 @@ fn get_absolute_path(lua: &Lua, path: String) -> mlua::Result<String> {
 */
 fn get_previous_path(lua: &Lua, path: String) -> mlua::Result<String> {
     unsafe {
-        let value = ffi::GetPrevDirectoryPath(
+        let value = GetPrevDirectoryPath(
             Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr(),
         );
 
@@ -734,7 +734,7 @@ fn get_previous_path(lua: &Lua, path: String) -> mlua::Result<String> {
 */
 fn get_work_directory(_: &Lua, _: ()) -> mlua::Result<String> {
     unsafe {
-        let result = ffi::GetWorkingDirectory();
+        let result = GetWorkingDirectory();
         Script::c_to_rust_string(result)
     }
 }
@@ -751,7 +751,7 @@ fn get_work_directory(_: &Lua, _: ()) -> mlua::Result<String> {
 */
 fn get_application_directory(_: &Lua, _: ()) -> mlua::Result<String> {
     unsafe {
-        let result = ffi::GetApplicationDirectory();
+        let result = GetApplicationDirectory();
         Script::c_to_rust_string(result)
     }
 }
@@ -765,9 +765,8 @@ fn get_application_directory(_: &Lua, _: ()) -> mlua::Result<String> {
 */
 fn create_path(lua: &Lua, path: String) -> mlua::Result<()> {
     unsafe {
-        let value = ffi::MakeDirectory(
-            Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr(),
-        );
+        let value =
+            MakeDirectory(Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr());
 
         if value == 0 {
             Ok(())
@@ -788,9 +787,8 @@ fn create_path(lua: &Lua, path: String) -> mlua::Result<()> {
 */
 fn change_path(lua: &Lua, path: String) -> mlua::Result<()> {
     unsafe {
-        let value = ffi::ChangeDirectory(
-            Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr(),
-        );
+        let value =
+            ChangeDirectory(Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr());
 
         if value {
             Ok(())
@@ -811,7 +809,7 @@ fn change_path(lua: &Lua, path: String) -> mlua::Result<()> {
 */
 fn get_path_file(lua: &Lua, path: String) -> mlua::Result<bool> {
     unsafe {
-        Ok(ffi::IsPathFile(
+        Ok(IsPathFile(
             Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr(),
         ))
     }
@@ -825,11 +823,7 @@ fn get_path_file(lua: &Lua, path: String) -> mlua::Result<bool> {
 }
 */
 fn get_file_name_valid(_: &Lua, path: String) -> mlua::Result<bool> {
-    unsafe {
-        Ok(ffi::IsFileNameValid(
-            Script::rust_to_c_string(&path)?.as_ptr(),
-        ))
-    }
+    unsafe { Ok(IsFileNameValid(Script::rust_to_c_string(&path)?.as_ptr())) }
 }
 
 /* entry
@@ -852,7 +846,6 @@ fn scan_path(
     lua: &Lua,
     (path, filter, recursive, relative): (String, Option<String>, bool, bool),
 ) -> mlua::Result<LuaValue> {
-    let c_path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
     let mut data: Vec<String> = Vec::new();
 
     unsafe {
@@ -860,10 +853,11 @@ fn scan_path(
             if let Some(filter) = filter {
                 let filter = Script::rust_to_c_string(&filter)
                     .map_err(|e| mlua::Error::runtime(e.to_string()))?;
-
-                ffi::LoadDirectoryFilesEx(c_path.as_ptr(), filter.as_ptr(), recursive)
+                let c_path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
+                LoadDirectoryFilesEx(c_path.as_ptr(), filter.as_ptr(), recursive)
             } else {
-                ffi::LoadDirectoryFilesEx(c_path.as_ptr(), std::ptr::null(), recursive)
+                let c_path = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
+                LoadDirectoryFilesEx(c_path.as_ptr(), std::ptr::null(), recursive)
             }
         };
 
@@ -886,7 +880,7 @@ fn scan_path(
             }
         }
 
-        ffi::UnloadDirectoryFiles(result);
+        UnloadDirectoryFiles(result);
 
         lua.to_value(&data)
     }
@@ -900,7 +894,7 @@ fn scan_path(
 }
 */
 fn get_file_drop(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsFileDropped()) }
+    unsafe { Ok(IsFileDropped()) }
 }
 
 /* entry
@@ -914,7 +908,7 @@ fn get_file_drop_list(lua: &Lua, _: ()) -> mlua::Result<LuaValue> {
     let mut data: Vec<String> = Vec::new();
 
     unsafe {
-        let result = ffi::LoadDroppedFiles();
+        let result = LoadDroppedFiles();
 
         for x in 0..result.count {
             let result_path = *result.paths.wrapping_add(x.try_into().unwrap());
@@ -924,7 +918,7 @@ fn get_file_drop_list(lua: &Lua, _: ()) -> mlua::Result<LuaValue> {
             data.push(result_path);
         }
 
-        ffi::UnloadDroppedFiles(result);
+        UnloadDroppedFiles(result);
 
         lua.to_value(&data)
     }
@@ -939,11 +933,10 @@ fn get_file_drop_list(lua: &Lua, _: ()) -> mlua::Result<LuaValue> {
 */
 fn get_file_modification(lua: &Lua, path: String) -> mlua::Result<i32> {
     unsafe {
-        let time: i32 = ffi::GetFileModTime(
-            Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr(),
-        )
-        .try_into()
-        .unwrap();
+        let time: i32 =
+            GetFileModTime(Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?.as_ptr())
+                .try_into()
+                .unwrap();
         Ok(time)
     }
 }

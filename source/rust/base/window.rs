@@ -53,12 +53,9 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
-use std::{
-    collections::HashMap,
-    ffi::CStr,
-};
+use std::collections::HashMap;
 
 //================================================================
 
@@ -318,7 +315,7 @@ async fn text_dialog(
 }
 */
 fn get_close(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::WindowShouldClose()) }
+    unsafe { Ok(WindowShouldClose()) }
 }
 
 /* entry
@@ -332,7 +329,7 @@ fn get_close(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_fullscreen(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowFullscreen()) }
+    unsafe { Ok(IsWindowFullscreen()) }
 }
 
 /* entry
@@ -346,7 +343,7 @@ fn get_fullscreen(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_hidden(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowHidden()) }
+    unsafe { Ok(IsWindowHidden()) }
 }
 
 /* entry
@@ -360,7 +357,7 @@ fn get_hidden(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_minimize(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowMinimized()) }
+    unsafe { Ok(IsWindowMinimized()) }
 }
 
 /* entry
@@ -374,7 +371,7 @@ fn get_minimize(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_maximize(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowMaximized()) }
+    unsafe { Ok(IsWindowMaximized()) }
 }
 
 /* entry
@@ -388,7 +385,7 @@ fn get_maximize(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_focus(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowFocused()) }
+    unsafe { Ok(IsWindowFocused()) }
 }
 
 /* entry
@@ -402,7 +399,7 @@ fn get_focus(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_resize(_: &Lua, _: ()) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowResized()) }
+    unsafe { Ok(IsWindowResized()) }
 }
 
 /* entry
@@ -419,7 +416,7 @@ fn get_resize(_: &Lua, _: ()) -> mlua::Result<bool> {
 }
 */
 fn get_state(_: &Lua, flag: u32) -> mlua::Result<bool> {
-    unsafe { Ok(ffi::IsWindowState(flag)) }
+    unsafe { Ok(IsWindowState(flag)) }
 }
 
 /* entry
@@ -436,9 +433,9 @@ fn get_state(_: &Lua, flag: u32) -> mlua::Result<bool> {
 fn set_state(_: &Lua, (flag, state): (u32, bool)) -> mlua::Result<()> {
     unsafe {
         if state {
-            ffi::SetWindowState(flag);
+            SetWindowState(flag);
         } else {
-            ffi::ClearWindowState(flag);
+            ClearWindowState(flag);
         }
 
         Ok(())
@@ -450,7 +447,7 @@ fn set_state(_: &Lua, (flag, state): (u32, bool)) -> mlua::Result<()> {
 */
 fn set_fullscreen(_: &Lua, _: ()) -> mlua::Result<()> {
     unsafe {
-        ffi::ToggleFullscreen();
+        ToggleFullscreen();
         Ok(())
     }
 }
@@ -460,7 +457,7 @@ fn set_fullscreen(_: &Lua, _: ()) -> mlua::Result<()> {
 */
 fn set_borderless(_: &Lua, _: ()) -> mlua::Result<()> {
     unsafe {
-        ffi::ToggleBorderlessWindowed();
+        ToggleBorderlessWindowed();
         Ok(())
     }
 }
@@ -470,7 +467,7 @@ fn set_borderless(_: &Lua, _: ()) -> mlua::Result<()> {
 */
 fn set_minimize(_: &Lua, _: ()) -> mlua::Result<()> {
     unsafe {
-        ffi::MinimizeWindow();
+        MinimizeWindow();
         Ok(())
     }
 }
@@ -480,7 +477,7 @@ fn set_minimize(_: &Lua, _: ()) -> mlua::Result<()> {
 */
 fn set_maximize(_: &Lua, _: ()) -> mlua::Result<()> {
     unsafe {
-        ffi::MaximizeWindow();
+        MaximizeWindow();
         Ok(())
     }
 }
@@ -490,7 +487,7 @@ fn set_maximize(_: &Lua, _: ()) -> mlua::Result<()> {
 */
 fn set_restore(_: &Lua, _: ()) -> mlua::Result<()> {
     unsafe {
-        ffi::RestoreWindow();
+        RestoreWindow();
         Ok(())
     }
 }
@@ -499,12 +496,12 @@ fn set_restore(_: &Lua, _: ()) -> mlua::Result<()> {
 { "version": "1.0.0", "name": "alicia.window.set_icon", "info": "Set the window icon." }
 */
 fn set_icon(_: &Lua, icon: LuaAnyUserData) -> mlua::Result<()> {
-    if icon.is::<crate::base::image::Image>() {
-        let icon = icon.borrow::<crate::base::image::Image>().unwrap();
+    if icon.is::<Image>() {
+        let icon = icon.borrow::<Image>().unwrap();
         let icon = &*icon;
 
         unsafe {
-            ffi::SetWindowIcon(icon.0);
+            SetWindowIcon(*icon);
             return Ok(());
         }
     }
@@ -521,7 +518,7 @@ fn set_name(_: &Lua, text: String) -> mlua::Result<()> {
     let text = Script::rust_to_c_string(&text)?;
 
     unsafe {
-        ffi::SetWindowTitle(text.as_ptr());
+        SetWindowTitle(text.as_ptr());
         Ok(())
     }
 }
@@ -540,7 +537,7 @@ fn set_point(lua: &Lua, shape: LuaValue) -> mlua::Result<()> {
     let shape: Vector2 = lua.from_value(shape)?;
 
     unsafe {
-        ffi::SetWindowPosition(shape.x as i32, shape.y as i32);
+        SetWindowPosition(shape.x as i32, shape.y as i32);
         Ok(())
     }
 }
@@ -557,7 +554,7 @@ fn set_point(lua: &Lua, shape: LuaValue) -> mlua::Result<()> {
 */
 fn set_screen(_: &Lua, index: i32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetWindowMonitor(index);
+        SetWindowMonitor(index);
         Ok(())
     }
 }
@@ -576,7 +573,7 @@ fn set_shape_min(lua: &Lua, shape: LuaValue) -> mlua::Result<()> {
     let shape: Vector2 = lua.from_value(shape)?;
 
     unsafe {
-        ffi::SetWindowMinSize(shape.x as i32, shape.y as i32);
+        SetWindowMinSize(shape.x as i32, shape.y as i32);
         Ok(())
     }
 }
@@ -595,7 +592,7 @@ fn set_shape_max(lua: &Lua, shape: LuaValue) -> mlua::Result<()> {
     let shape: Vector2 = lua.from_value(shape)?;
 
     unsafe {
-        ffi::SetWindowMaxSize(shape.x as i32, shape.y as i32);
+        SetWindowMaxSize(shape.x as i32, shape.y as i32);
         Ok(())
     }
 }
@@ -614,7 +611,7 @@ fn set_shape(lua: &Lua, shape: LuaValue) -> mlua::Result<()> {
     let shape: Vector2 = lua.from_value(shape)?;
 
     unsafe {
-        ffi::SetWindowSize(shape.x as i32, shape.y as i32);
+        SetWindowSize(shape.x as i32, shape.y as i32);
         Ok(())
     }
 }
@@ -631,7 +628,7 @@ fn set_shape(lua: &Lua, shape: LuaValue) -> mlua::Result<()> {
 */
 fn set_alpha(_: &Lua, alpha: f32) -> mlua::Result<()> {
     unsafe {
-        ffi::SetWindowOpacity(alpha);
+        SetWindowOpacity(alpha);
         Ok(())
     }
 }
@@ -641,7 +638,7 @@ fn set_alpha(_: &Lua, alpha: f32) -> mlua::Result<()> {
 */
 fn set_focus(_: &Lua, _: ()) -> mlua::Result<()> {
     unsafe {
-        ffi::SetWindowFocused();
+        SetWindowFocused();
         Ok(())
     }
 }
@@ -658,7 +655,7 @@ fn set_focus(_: &Lua, _: ()) -> mlua::Result<()> {
 }
 */
 fn get_shape(_: &Lua, _: ()) -> mlua::Result<(i32, i32)> {
-    unsafe { Ok((ffi::GetScreenWidth(), ffi::GetScreenHeight())) }
+    unsafe { Ok((GetScreenWidth(), GetScreenHeight())) }
 }
 
 /* entry
@@ -673,7 +670,7 @@ fn get_shape(_: &Lua, _: ()) -> mlua::Result<(i32, i32)> {
 }
 */
 fn get_render_shape(_: &Lua, _: ()) -> mlua::Result<(i32, i32)> {
-    unsafe { Ok((ffi::GetRenderWidth(), ffi::GetRenderHeight())) }
+    unsafe { Ok((GetRenderWidth(), GetRenderHeight())) }
 }
 
 /* entry
@@ -687,7 +684,7 @@ fn get_render_shape(_: &Lua, _: ()) -> mlua::Result<(i32, i32)> {
 }
 */
 fn get_screen_count(_: &Lua, _: ()) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetMonitorCount()) }
+    unsafe { Ok(GetMonitorCount()) }
 }
 
 /* entry
@@ -701,7 +698,7 @@ fn get_screen_count(_: &Lua, _: ()) -> mlua::Result<i32> {
 }
 */
 fn get_screen_focus(_: &Lua, _: ()) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetCurrentMonitor()) }
+    unsafe { Ok(GetCurrentMonitor()) }
 }
 
 /* entry
@@ -720,7 +717,7 @@ fn get_screen_focus(_: &Lua, _: ()) -> mlua::Result<i32> {
 */
 fn get_screen_point(_: &Lua, index: i32) -> mlua::Result<(f32, f32)> {
     unsafe {
-        let value = ffi::GetMonitorPosition(index);
+        let value = GetMonitorPosition(index);
         Ok((value.x, value.y))
     }
 }
@@ -740,7 +737,7 @@ fn get_screen_point(_: &Lua, index: i32) -> mlua::Result<(f32, f32)> {
 }
 */
 fn get_screen_shape(_: &Lua, index: i32) -> mlua::Result<(i32, i32)> {
-    unsafe { Ok((ffi::GetMonitorWidth(index), ffi::GetMonitorHeight(index))) }
+    unsafe { Ok((GetMonitorWidth(index), GetMonitorHeight(index))) }
 }
 
 /* entry
@@ -760,8 +757,8 @@ fn get_screen_shape(_: &Lua, index: i32) -> mlua::Result<(i32, i32)> {
 fn get_screen_shape_physical(_: &Lua, index: i32) -> mlua::Result<(i32, i32)> {
     unsafe {
         Ok((
-            ffi::GetMonitorPhysicalWidth(index),
-            ffi::GetMonitorPhysicalHeight(index),
+            GetMonitorPhysicalWidth(index),
+            GetMonitorPhysicalHeight(index),
         ))
     }
 }
@@ -780,7 +777,7 @@ fn get_screen_shape_physical(_: &Lua, index: i32) -> mlua::Result<(i32, i32)> {
 }
 */
 fn get_screen_rate(_: &Lua, index: i32) -> mlua::Result<i32> {
-    unsafe { Ok(ffi::GetMonitorRefreshRate(index)) }
+    unsafe { Ok(GetMonitorRefreshRate(index)) }
 }
 
 /* entry
@@ -796,7 +793,7 @@ fn get_screen_rate(_: &Lua, index: i32) -> mlua::Result<i32> {
 */
 fn get_point(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
     unsafe {
-        let value = ffi::GetWindowPosition();
+        let value = GetWindowPosition();
 
         Ok((value.x, value.y))
     }
@@ -815,7 +812,7 @@ fn get_point(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
 */
 fn get_scale(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
     unsafe {
-        let value = ffi::GetWindowScaleDPI();
+        let value = GetWindowScaleDPI();
 
         Ok((value.x, value.y))
     }
@@ -836,11 +833,8 @@ fn get_scale(_: &Lua, _: ()) -> mlua::Result<(f32, f32)> {
 */
 fn get_screen_name(_: &Lua, index: i32) -> mlua::Result<String> {
     unsafe {
-        let name = ffi::GetMonitorName(index);
-        Ok(CStr::from_ptr(name)
-            .to_str()
-            .map_err(|e| mlua::Error::runtime(e.to_string()))?
-            .to_string())
+        let name = GetMonitorName(index);
+        Script::c_to_rust_string(name)
     }
 }
 
@@ -858,7 +852,7 @@ fn get_screen_shot(lua: &Lua, path: String) -> mlua::Result<()> {
     unsafe {
         let path = ScriptData::get_path(lua, &path)?;
         let path = Script::rust_to_c_string(&path)?;
-        ffi::TakeScreenshot(path.as_ptr());
+        TakeScreenshot(path.as_ptr());
         Ok(())
     }
 }

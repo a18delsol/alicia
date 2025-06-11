@@ -53,9 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
-use std::ffi::CStr;
 
 //================================================================
 
@@ -66,7 +65,7 @@ use std::ffi::CStr;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let model = lua.create_table()?;
 
-    model.set("new", lua.create_function(self::Model::new)?)?;
+    model.set("new", lua.create_function(self::LuaModel::new)?)?;
 
     table.set("model", model)?;
 
@@ -78,8 +77,6 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 
     Ok(())
 }
-
-type RLModel = raylib::models::Model;
 
 /* class
 {
@@ -93,21 +90,44 @@ type RLModel = raylib::models::Model;
     ]
 }
 */
-pub struct Model(pub RLModel);
+struct LuaModel(Model);
 
-unsafe impl Send for Model {}
+unsafe impl Send for LuaModel {}
 
-impl Model {
+impl Drop for LuaModel {
+    fn drop(&mut self) {
+        unsafe {
+            for x in 0..self.0.materialCount {
+                let material = *self.0.materials.wrapping_add(x as usize);
+
+                for i in 0..12 {
+                    let map = *material.maps.wrapping_add(i);
+
+                    if IsTextureValid(map.texture) {
+                        // apparently every model is also bound to the internal RL texture? what?
+                        if map.texture.id != 1 {
+                            UnloadTexture(map.texture);
+                        }
+                    }
+                }
+            }
+
+            UnloadModel(self.0);
+        }
+    }
+}
+
+impl LuaModel {
     /* entry
     {
         "version": "1.0.0",
         "name": "alicia.model.new",
-        "info": "Create a new Model resource.",
+        "info": "Create a new LuaModel resource.",
         "member": [
             { "name": "path", "info": "Path to model file.", "kind": "string" }
         ],
         "result": [
-            { "name": "model", "info": "Model resource.", "kind": "model" }
+            { "name": "model", "info": "LuaModel resource.", "kind": "model" }
         ]
     }
     */
@@ -115,34 +135,43 @@ impl Model {
         let name = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
 
         unsafe {
-            let data = ffi::LoadModel(name.as_ptr());
+            let data = LoadModel(name.as_ptr());
 
-            if ffi::IsModelValid(data) {
-                let mut data = RLModel::from_raw(data);
+            for x in 0..data.materialCount {
+                let mut m = *data.materials.wrapping_add(x as usize);
+                let mut a = *m.maps.wrapping_add(0);
+                a.color = Color {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                    a: 255,
+                };
 
-                for material in data.materials_mut() {
-                    for map in material.maps_mut() {
-                        if map.texture.id > 0 {
-                            ffi::GenTextureMipmaps(&mut map.texture);
-                            ffi::SetTextureFilter(
-                                map.texture,
-                                ffi::TextureFilter::TEXTURE_FILTER_BILINEAR as i32,
-                            );
-                        }
-                    }
-                }
+                R3D_SetMaterialOcclusion(&mut m, std::ptr::null_mut(), 1.0);
+                //R3D_SetMaterialRoughness(&mut m, std::ptr::null_mut(), 1.0);
+                //R3D_SetMaterialMetalness(&mut m, std::ptr::null_mut(), 1.0);
 
+                let mut a = *m.maps.wrapping_add(3);
+                a.texture.id = 1;
+            }
+
+            for x in 0..data.meshCount {
+                let mut m = *data.meshes.wrapping_add(x as usize);
+                GenMeshTangents(&mut m);
+            }
+
+            if IsModelValid(data) {
                 Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
-                    "Model::new(): Could not load file \"{path}\"."
+                    "LuaModel::new(): Could not load file \"{path}\"."
                 )))
             }
         }
     }
 }
 
-impl mlua::UserData for Model {
+impl mlua::UserData for LuaModel {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
         field.add_field_method_get("mesh_count", |_, this| Ok(this.0.meshCount));
         field.add_field_method_get("material_count", |_, this| Ok(this.0.materialCount));
@@ -165,12 +194,15 @@ impl mlua::UserData for Model {
         method.add_method_mut(
             "bind",
             |_, this, (index, which, texture): (usize, usize, LuaAnyUserData)| {
+                // TO-DO port
+                /*
                 if texture.is::<crate::base::texture::Texture>() {
                     let texture = texture.borrow::<crate::base::texture::Texture>().unwrap();
                     let texture = &*texture;
 
                     this.0.materials_mut()[index].maps_mut()[which].texture = texture.0;
                 }
+                */
 
                 Ok(())
             },
@@ -179,12 +211,15 @@ impl mlua::UserData for Model {
         method.add_method_mut(
             "bind_shader",
             |_, this, (index, shader): (usize, LuaAnyUserData)| {
+                // TO-DO port
+                /*
                 if shader.is::<crate::base::shader::Shader>() {
                     let shader = shader.borrow::<crate::base::shader::Shader>().unwrap();
                     let shader = &*shader;
 
                     this.0.materials_mut()[index].shader = *shader.0;
                 }
+                */
 
                 Ok(())
             },
@@ -200,6 +235,8 @@ impl mlua::UserData for Model {
         method.add_method(
             "draw_mesh",
             |lua, this, (index, point, angle, scale): (usize, LuaValue, LuaValue, LuaValue)| unsafe {
+                // TO-DO port
+                /*
                 let mesh = &this.0.meshes()[index];
                 let point: Vector3 = lua.from_value(point)?;
                 let angle: Vector3 = lua.from_value(angle)?;
@@ -211,9 +248,10 @@ impl mlua::UserData for Model {
                 );
 
                 let transform =
-                    (Matrix::translate(point.x, point.y, point.z) * Matrix::rotate_xyz(angle) * Matrix::scale(scale.x, scale.y, scale.z)).into();
+                    (Matrix::translate(point.x, point.y, point.z) * Matrix::rotate_xyz(angle) * Matrix::scale(scale.x, scale.y, scale.z));
+                */
 
-                ffi::DrawMesh(**mesh, *this.0.materials()[0], transform);
+                //DrawMesh(**mesh, *this.0.materials()[0], transform);
                 Ok(())
             },
         );
@@ -232,20 +270,23 @@ impl mlua::UserData for Model {
         */
         method.add_method(
             "draw",
-            |lua, this, (point, scale, color): (LuaValue, f32, LuaValue)| unsafe {
+            |lua, this, (point, scale, color, r3d): (LuaValue, f32, LuaValue, bool)| unsafe {
                 let point: Vector3 = lua.from_value(point)?;
                 let color: Color = lua.from_value(color)?;
 
-                //super::r3d::R3D_DrawModel(
-                //    std::mem::transmute(*this.0),
-                //    super::r3d::Vector3 {
-                //        x: point.x,
-                //        y: point.y,
-                //        z: point.z,
-                //    },
-                //    1.0,
-                //);
-                ffi::DrawModel(*this.0, point.into(), scale, color.into());
+                if r3d {
+                    R3D_DrawModel(
+                        this.0,
+                        Vector3 {
+                            x: point.x,
+                            y: point.y,
+                            z: point.z,
+                        },
+                        1.0,
+                    );
+                } else {
+                    DrawModel(this.0, point, scale, color);
+                }
                 Ok(())
             },
         );
@@ -268,7 +309,7 @@ impl mlua::UserData for Model {
                 let point: Vector3 = lua.from_value(point)?;
                 let color: Color = lua.from_value(color)?;
 
-                ffi::DrawModelWires(*this.0, point.into(), scale, color.into());
+                DrawModelWires(this.0, point, scale, color);
                 Ok(())
             },
         );
@@ -289,16 +330,19 @@ impl mlua::UserData for Model {
         method.add_method_mut(
             "draw_transform",
             |lua, this, (point, angle, scale, color): (LuaValue, LuaValue, LuaValue, LuaValue)| unsafe {
+                // TO-DO port
+                /*
                 let point: Vector3 = lua.from_value(point)?;
                 let angle: Vector4 = lua.from_value(angle)?;
                 let scale: Vector3 = lua.from_value(scale)?;
                 let color: Color = lua.from_value(color)?;
 
-                this.0.transform = ((Matrix::scale(scale.x, scale.y, scale.z) * angle.to_matrix()) * Matrix::translate(point.x, point.y, point.z)).into();
+                this.0.transform = ((Matrix::scale(scale.x, scale.y, scale.z) * angle.to_matrix()) * Matrix::translate(point.x, point.y, point.z));
 
-                ffi::DrawModel(*this.0, Vector3::zero().into(), 1.0, color.into());
+                DrawModel(*this, Vector3::zero(), 1.0, color);
 
-                this.0.transform = Matrix::identity().into();
+                this.0.transform = Matrix::identity();
+                */
 
                 Ok(())
             },
@@ -320,7 +364,7 @@ impl mlua::UserData for Model {
         }
         */
         method.add_method("get_box_3", |_, this, _: ()| unsafe {
-            let value = ffi::GetModelBoundingBox(*this.0);
+            let value = GetModelBoundingBox(this.0);
             Ok((
                 value.min.x,
                 value.min.y,
@@ -344,9 +388,14 @@ impl mlua::UserData for Model {
             ]
         }
         */
-        method.add_method("mesh_vertex", |lua, this, index: usize| {
-            let mesh = &this.0.meshes()[index];
-            lua.to_value(mesh.vertices())
+        method.add_method("mesh_vertex", |lua, this, index: usize| unsafe {
+            let mesh = *this.0.meshes.wrapping_add(index);
+            let work = std::slice::from_raw_parts(
+                mesh.vertices as *const Vector3,
+                mesh.vertexCount as usize,
+            );
+
+            lua.to_value(&work)
         });
 
         /* entry
@@ -362,20 +411,14 @@ impl mlua::UserData for Model {
             ]
         }
         */
-        method.add_method("mesh_index", |lua, this, index: usize| {
-            // bug with raylib-rs.
-            //let mesh = &this.0.meshes()[index];
-            //lua.to_value(mesh.indicies())
+        method.add_method("mesh_index", |lua, this, index: usize| unsafe {
+            let mesh = *this.0.meshes.wrapping_add(index);
+            let work = std::slice::from_raw_parts(
+                mesh.indices as *const u16,
+                (mesh.triangleCount * 3) as usize,
+            );
 
-            let mesh = &this.0.meshes()[index];
-            unsafe {
-                let work = std::slice::from_raw_parts(
-                    mesh.as_ref().indices as *const u16,
-                    (mesh.as_ref().triangleCount * 3) as usize,
-                );
-
-                lua.to_value(&work)
-            }
+            lua.to_value(&work)
         });
 
         /* entry
@@ -392,13 +435,12 @@ impl mlua::UserData for Model {
         }
         */
         method.add_method("mesh_triangle_count", |_, this, index: usize| {
-            let mesh = &this.0.meshes()[index];
-            Ok(mesh.triangleCount)
+            //let mesh = &this.0.meshes()[index];
+            //Ok(mesh.triangleCount)
+            Ok(())
         });
     }
 }
-
-type RLModelAnimation = raylib::models::ModelAnimation;
 
 /* class
 {
@@ -407,7 +449,6 @@ type RLModelAnimation = raylib::models::ModelAnimation;
     "info": "An unique handle for a model animation in memory."
 }
 */
-pub struct ModelAnimation(pub RLModelAnimation);
 
 unsafe impl Send for ModelAnimation {}
 
@@ -430,7 +471,7 @@ impl ModelAnimation {
 
         unsafe {
             let mut count = 0;
-            let data = ffi::LoadModelAnimations(name.as_ptr(), &mut count);
+            let data = LoadModelAnimations(name.as_ptr(), &mut count);
             let mut list: Vec<Self> = Vec::new();
 
             if count == 0 {
@@ -442,7 +483,7 @@ impl ModelAnimation {
             for x in 0..count {
                 let animation = data.wrapping_add(x.try_into().unwrap());
 
-                list.push(Self(RLModelAnimation::from_raw(*animation)));
+                list.push(*animation);
             }
 
             Ok(list)
@@ -452,15 +493,13 @@ impl ModelAnimation {
 
 impl mlua::UserData for ModelAnimation {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
-        field.add_field_method_get("bone_count", |_, this| Ok(this.0.boneCount));
-        field.add_field_method_get("frame_count", |_, this| Ok(this.0.frameCount));
-        field.add_field_method_get("name", |_, this| unsafe {
-            let name = this.0.name.as_ptr();
-            Ok(CStr::from_ptr(name)
-                .to_str()
-                .map_err(|e| mlua::Error::runtime(e.to_string()))?
-                .to_string())
-        });
+        field.add_field_method_get("bone_count", |_, this| Ok(this.boneCount));
+        field.add_field_method_get("frame_count", |_, this| Ok(this.frameCount));
+        // TO-DO port
+        //field.add_field_method_get("name", |_, this| {
+        //    //let name = this.0.name.as_ptr();
+        //    //Script::c_to_rust_string(this.0.name)
+        //});
     }
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
@@ -472,14 +511,13 @@ impl mlua::UserData for ModelAnimation {
         }
         */
         method.add_method("get_bone_", |_, this, index: usize| {
-            let bone = &this.0.bones()[index];
-            unsafe {
-                let name = CStr::from_ptr(bone.name.as_ptr())
-                    .to_str()
-                    .map_err(|e| mlua::Error::runtime(e.to_string()))?
-                    .to_string();
-                Ok((name, bone.parent))
-            }
+            // TO-DO port
+            //let bone = &this.0.bones()[index];
+            //unsafe {
+            //    let name = Script::c_to_rust_string(bone.name)?;
+            //    Ok((name, bone.parent))
+            //}
+            Ok(())
         });
 
         /* entry
@@ -492,12 +530,14 @@ impl mlua::UserData for ModelAnimation {
         method.add_method(
             "get_bone_transform",
             |_, this, (frame, index): (usize, usize)| {
-                let transform = this.0.frame_poses()[frame][index];
-                Ok((
-                    transform.translation.x,
-                    transform.translation.y,
-                    transform.translation.z,
-                ))
+                // TO-DO port
+                //let transform = this.0.frame_poses()[frame][index];
+                //Ok((
+                //    transform.translation.x,
+                //    transform.translation.y,
+                //    transform.translation.z,
+                //))
+                Ok(())
             },
         );
 
@@ -515,11 +555,11 @@ impl mlua::UserData for ModelAnimation {
         method.add_method(
             "update",
             |_, this, (model, frame): (LuaAnyUserData, usize)| {
-                if model.is::<Model>() {
-                    let model = model.borrow::<Model>().unwrap();
+                if model.is::<LuaModel>() {
+                    let model = model.borrow::<LuaModel>().unwrap();
 
                     unsafe {
-                        ffi::UpdateModelAnimation(*model.0, *this.0, frame.try_into().unwrap());
+                        UpdateModelAnimation(model.0, *this, frame.try_into().unwrap());
                     }
                 } else {
                     panic!("not model");

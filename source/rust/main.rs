@@ -56,56 +56,63 @@ mod window;
 
 //================================================================
 
+use crate::base::helper::*;
 use crate::status::*;
 
 //================================================================
 
 // the main entry-point.
-#[rustfmt::skip]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create the Alicia state.
     let mut status = Status::new().await;
 
     // create the RL context.
-    let mut context = status.window().await;
+    status.window().await;
 
     loop {
         match status {
             // missing status: no info.json file is present.
-            Status::Missing => {
-                if let Some((ref mut handle, ref thread, ref _audio)) = context {
-                    //let mut window = window::Window::new(handle, thread);
+            Status::Missing => unsafe {
+                if IsWindowReady() {
+                    let mut window = window::Window::new();
 
-                    if let Some(state) = Status::missing(handle, thread).await {
+                    if let Some(state) = Status::missing(&mut window).await {
                         status = state;
-                    }   
+                    }
                 } else {
-                    panic!("main(): Missing info manifest data. Refer to the wiki on how to launch Alicia in head-less mode.")
+                    panic!(
+                        "main(): Missing info manifest data. Refer to the wiki on how to launch Alicia in head-less mode."
+                    )
                 }
-            }
+            },
             // success status: standard state.
             Status::Success(ref mut script) => {
-                if let Some(state) = Status::success(&context, script).await {
+                if let Some(state) = Status::success(script).await {
                     status = state;
                 }
             }
             // failure status: an error has been thrown from Lua, show crash-handler.
-            Status::Failure(ref mut script, ref error) => {
-                if let Some((ref mut handle, ref thread, ref _audio)) = context {
-                    //let mut window = window::Window::new(handle, thread);
-                    
-                    //if let Some(state) = Status::failure(handle, thread, script, error).await {
-                    //    status = state;
-                    //}
+            Status::Failure(ref mut script, ref error) => unsafe {
+                if IsWindowReady() {
+                    let mut window = window::Window::new();
 
-                    panic!("{error:?}")
+                    if let Some(state) = Status::failure(&mut window, script, error).await {
+                        status = state;
+                    }
                 } else {
                     panic!("{error:?}")
                 }
-            }
+            },
             // closure status: break the infinite loop and close.
             Status::Closure => break,
+        }
+    }
+
+    unsafe {
+        if IsWindowReady() {
+            R3D_Close();
+            CloseWindow();
         }
     }
 

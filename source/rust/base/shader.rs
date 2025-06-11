@@ -53,8 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -65,24 +65,22 @@ use mlua::prelude::*;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let shader = lua.create_table()?;
 
-    shader.set("new",             lua.create_function(self::Shader::new)?)?;
-    shader.set("new_from_memory", lua.create_function(self::Shader::new_from_memory)?)?;
+    shader.set("new",             lua.create_function(self::LuaShader::new)?)?;
+    shader.set("new_from_memory", lua.create_function(self::LuaShader::new_from_memory)?)?;
 
     table.set("shader", shader)?;
 
     Ok(())
 }
 
-pub type RLShader = raylib::shaders::Shader;
-
 /* class
 { "version": "1.0.0", "name": "shader", "info": "An unique handle for a shader in memory." }
 */
-pub struct Shader(pub RLShader);
+struct LuaShader(Shader);
 
-unsafe impl Send for Shader {}
+unsafe impl Send for LuaShader {}
 
-impl Shader {
+impl LuaShader {
     /* entry
     {
         "version": "1.0.0",
@@ -93,7 +91,7 @@ impl Shader {
             { "name": "f_path", "info": "Path to .fs file.", "kind": "string" }
         ],
         "result": [
-            { "name": "shader", "info": "Shader resource.", "kind": "shader" }
+            { "name": "shader", "info": "LuaShader resource.", "kind": "shader" }
         ]
     }
     */
@@ -117,13 +115,13 @@ impl Shader {
                 None => std::ptr::null(),
             };
 
-            let data = ffi::LoadShader(v_path, f_path);
+            let data = LoadShader(v_path, f_path);
 
-            if ffi::IsShaderValid(data) {
-                Ok(Self(RLShader::from_raw(data)))
+            if IsShaderValid(data) {
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Shader::new(): Could not load file.".to_string(),
+                    "LuaShader::new(): Could not load file.".to_string(),
                 ))
             }
         }
@@ -159,20 +157,20 @@ impl Shader {
                 None => std::ptr::null(),
             };
 
-            let data = ffi::LoadShaderFromMemory(v_path, f_path);
+            let data = LoadShaderFromMemory(v_path, f_path);
 
-            if ffi::IsShaderValid(data) {
-                Ok(Self(RLShader::from_raw(data)))
+            if IsShaderValid(data) {
+                Ok(Self(data))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Shader::new_from_memory(): Could not load file.".to_string(),
+                    "LuaShader::new_from_memory(): Could not load file.".to_string(),
                 ))
             }
         }
     }
 }
 
-impl mlua::UserData for Shader {
+impl mlua::UserData for LuaShader {
     fn add_fields<F: mlua::UserDataFields<Self>>(_: &mut F) {}
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
@@ -188,11 +186,11 @@ impl mlua::UserData for Shader {
         */
         method.add_method("begin", |_: &Lua, this, call: mlua::Function| {
             unsafe {
-                ffi::BeginShaderMode(*this.0);
+                BeginShaderMode(this.0);
 
                 let call = call.call::<()>(());
 
-                ffi::EndShaderMode();
+                EndShaderMode();
 
                 call?;
             }
@@ -214,7 +212,10 @@ impl mlua::UserData for Shader {
         }
         */
         method.add_method("get_location_name", |_, this, name: String| {
-            Ok(this.0.get_shader_location(&name))
+            // TO-DO port
+            //Ok(this.get_shader_location(&name))
+            todo!();
+            Ok(())
         });
 
         /* entry
@@ -231,7 +232,10 @@ impl mlua::UserData for Shader {
         }
         */
         method.add_method("get_location_attribute_name", |_, this, name: String| {
-            Ok(this.0.get_shader_location_attribute(&name))
+            // TO-DO port
+            //Ok(this.get_shader_location_attribute(&name))
+            todo!();
+            Ok(())
         });
 
         /* entry
@@ -248,7 +252,10 @@ impl mlua::UserData for Shader {
         }
         */
         method.add_method("get_location", |_, this, location: usize| {
-            Ok(this.0.locs()[location])
+            // TO-DO port
+            //Ok(this.locs()[location])
+            todo!();
+            Ok(())
         });
 
         /* entry
@@ -265,7 +272,10 @@ impl mlua::UserData for Shader {
         method.add_method_mut(
             "set_location",
             |_, this, (location, value): (usize, i32)| {
-                this.0.locs_mut()[location] = value;
+                // TO-DO port
+                //this.locs_mut()[location] = value;
+                //Ok(())
+                todo!();
                 Ok(())
             },
         );
@@ -285,35 +295,37 @@ impl mlua::UserData for Shader {
         method.add_method_mut(
             "set_shader_value",
             |lua, this, (location, kind, value): (i32, i32, LuaValue)| unsafe {
+                // TO-DO port
+                /*
                 match kind {
                     0 => {
                         let value: i32 = lua.from_value(value)?;
-                        this.0.set_shader_value(location, value);
+                        this.set_shader_value(location, value);
                     }
                     1 => {
                         let value: f32 = lua.from_value(value)?;
-                        this.0.set_shader_value(location, value);
+                        this.set_shader_value(location, value);
                     }
                     2 => {
                         let value: Vector2 = lua.from_value(value)?;
-                        this.0.set_shader_value(location, value);
+                        this.set_shader_value(location, value);
                     }
                     3 => {
                         let value: Vector3 = lua.from_value(value)?;
-                        this.0.set_shader_value(location, value);
+                        this.set_shader_value(location, value);
                     }
                     4 => {
                         let value: Vector4 = lua.from_value(value)?;
-                        this.0.set_shader_value(location, value);
+                        this.set_shader_value(location, value);
                     }
                     5 => {
                         let value: Matrix = lua.from_value(value)?;
-                        ffi::SetShaderValueMatrix(*this.0, location, value.into());
+                        SetShaderValueMatrix(*this, location, value);
                     }
                     _ => {
                         if let Some(data) = value.as_userdata() {
                             if let Ok(data) = data.borrow::<crate::base::texture::Texture>() {
-                                ffi::SetShaderValueTexture(*this.0, location, (*data).0);
+                                SetShaderValueTexture(*this, location, (*data).0);
                             } else {
                                 return Err(mlua::Error::RuntimeError(
                                     "set_shader_value(): Error borrowing texture.".to_string(),
@@ -327,6 +339,9 @@ impl mlua::UserData for Shader {
                     }
                 };
 
+                Ok(())
+                */
+                todo!();
                 Ok(())
             },
         );

@@ -53,8 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -65,25 +65,31 @@ use mlua::prelude::*;
 pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let music = lua.create_table()?;
 
-    music.set("new",             lua.create_async_function(self::Music::new)?)?;
-    music.set("new_from_memory", lua.create_async_function(self::Music::new_from_memory)?)?;
+    music.set("new",             lua.create_async_function(self::LuaMusic::new)?)?;
+    music.set("new_from_memory", lua.create_async_function(self::LuaMusic::new_from_memory)?)?;
 
     table.set("music", music)?;
 
     Ok(())
 }
 
-type RLMusic = ffi::Music;
-
 /* class
 { "version": "1.0.0", "name": "music", "info": "An unique handle for music in memory." }
 */
 #[allow(dead_code)]
-struct Music(RLMusic, Option<Vec<u8>>);
+struct LuaMusic(Music, Option<Vec<u8>>);
 
-unsafe impl Send for Music {}
+impl Drop for LuaMusic {
+    fn drop(&mut self) {
+        unsafe {
+            UnloadMusicStream(self.0);
+        }
+    }
+}
 
-impl Music {
+unsafe impl Send for LuaMusic {}
+
+impl LuaMusic {
     /* entry
     {
         "version": "1.0.0",
@@ -93,7 +99,7 @@ impl Music {
             { "name": "path", "info": "Path to music file.", "kind": "string" }
         ],
         "result": [
-            { "name": "music", "info": "Music resource.", "kind": "music" }
+            { "name": "music", "info": "LuaMusic resource.", "kind": "music" }
         ],
         "routine": true
     }
@@ -102,13 +108,13 @@ impl Music {
         let name = Script::rust_to_c_string(&ScriptData::get_path(&lua, &path)?)?;
 
         tokio::task::spawn_blocking(move || unsafe {
-            let data = ffi::LoadMusicStream(name.as_ptr());
+            let data = LoadMusicStream(name.as_ptr());
 
-            if ffi::IsMusicValid(data) {
+            if IsMusicValid(data) {
                 Ok(Self(data, None))
             } else {
                 Err(mlua::Error::RuntimeError(format!(
-                    "Music::new(): Could not load file \"{path}\"."
+                    "LuaMusic::new(): Could not load file \"{path}\"."
                 )))
             }
         })
@@ -126,7 +132,7 @@ impl Music {
             { "name": "kind", "info": "The kind of music file (.png, etc.).", "kind": "string" }
         ],
         "result": [
-            { "name": "music", "info": "Music resource.", "kind": "music" }
+            { "name": "music", "info": "LuaMusic resource.", "kind": "music" }
         ],
         "routine": true
     }
@@ -136,17 +142,17 @@ impl Music {
 
         tokio::task::spawn_blocking(move || unsafe {
             let buffer = data.0.clone();
-            let data = ffi::LoadMusicStreamFromMemory(
+            let data = LoadMusicStreamFromMemory(
                 Script::rust_to_c_string(&kind)?.as_ptr(),
                 buffer.as_ptr(),
                 buffer.len() as i32,
             );
 
-            if ffi::IsMusicValid(data) {
+            if IsMusicValid(data) {
                 Ok(Self(data, Some(buffer)))
             } else {
                 Err(mlua::Error::RuntimeError(
-                    "Music::new_from_memory(): Could not load file.".to_string(),
+                    "LuaMusic::new_from_memory(): Could not load file.".to_string(),
                 ))
             }
         })
@@ -155,15 +161,7 @@ impl Music {
     }
 }
 
-impl Drop for Music {
-    fn drop(&mut self) {
-        unsafe {
-            ffi::UnloadMusicStream(self.0);
-        }
-    }
-}
-
-impl mlua::UserData for Music {
+impl mlua::UserData for LuaMusic {
     fn add_fields<F: mlua::UserDataFields<Self>>(_: &mut F) {}
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
@@ -171,7 +169,7 @@ impl mlua::UserData for Music {
         { "version": "1.0.0", "name": "music:play", "info": "Play the music." }
         */
         method.add_method("play", |_, this, ()| unsafe {
-            ffi::PlayMusicStream(this.0);
+            PlayMusicStream(this.0);
             Ok(())
         });
 
@@ -186,14 +184,14 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("get_playing", |_, this, ()| unsafe {
-            Ok(ffi::IsMusicStreamPlaying(this.0))
+            Ok(IsMusicStreamPlaying(this.0))
         });
 
         /* entry
         { "version": "1.0.0", "name": "music:stop", "info": "Stop the music." }
         */
         method.add_method("stop", |_, this, ()| unsafe {
-            ffi::StopMusicStream(this.0);
+            StopMusicStream(this.0);
             Ok(())
         });
 
@@ -201,7 +199,7 @@ impl mlua::UserData for Music {
         { "version": "1.0.0", "name": "music:pause", "info": "Pause the music." }
         */
         method.add_method("pause", |_, this, ()| unsafe {
-            ffi::PauseMusicStream(this.0);
+            PauseMusicStream(this.0);
             Ok(())
         });
 
@@ -209,7 +207,7 @@ impl mlua::UserData for Music {
         { "version": "1.0.0", "name": "music:resume", "info": "Resume the music." }
         */
         method.add_method("resume", |_, this, ()| unsafe {
-            ffi::ResumeMusicStream(this.0);
+            ResumeMusicStream(this.0);
             Ok(())
         });
 
@@ -224,7 +222,7 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("set_volume", |_, this, value: f32| unsafe {
-            ffi::SetMusicVolume(this.0, value);
+            SetMusicVolume(this.0, value);
             Ok(())
         });
 
@@ -239,7 +237,7 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("set_pitch", |_, this, value: f32| unsafe {
-            ffi::SetMusicPitch(this.0, value);
+            SetMusicPitch(this.0, value);
             Ok(())
         });
 
@@ -254,7 +252,7 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("set_pan", |_, this, value: f32| unsafe {
-            ffi::SetMusicPan(this.0, value);
+            SetMusicPan(this.0, value);
             Ok(())
         });
 
@@ -262,7 +260,7 @@ impl mlua::UserData for Music {
         { "version": "1.0.0", "name": "music:update", "info": "Update the music." }
         */
         method.add_method("update", |_, this, ()| unsafe {
-            ffi::UpdateMusicStream(this.0);
+            UpdateMusicStream(this.0);
             Ok(())
         });
 
@@ -277,7 +275,7 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("set_position", |_, this, value: f32| unsafe {
-            ffi::SeekMusicStream(this.0, value);
+            SeekMusicStream(this.0, value);
             Ok(())
         });
 
@@ -292,7 +290,7 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("get_length", |_, this, _: ()| unsafe {
-            Ok(ffi::GetMusicTimeLength(this.0))
+            Ok(GetMusicTimeLength(this.0))
         });
 
         /* entry
@@ -306,7 +304,7 @@ impl mlua::UserData for Music {
         }
         */
         method.add_method("get_played", |_, this, _: ()| unsafe {
-            Ok(ffi::GetMusicTimePlayed(this.0))
+            Ok(GetMusicTimePlayed(this.0))
         });
     }
 }

@@ -53,7 +53,7 @@ use crate::window::*;
 
 //================================================================
 
-////use raylib::prelude::*;
+use crate::base::helper::*;
 
 #[cfg(feature = "embed")]
 use rust_embed::Embed;
@@ -147,7 +147,7 @@ impl Status {
     }
 
     // create a RL context.
-    pub async fn window(&self) -> Option<(RaylibHandle, RaylibThread, RaylibAudio)> {
+    pub async fn window(&self) {
         let info = match self {
             Self::Success(script) => &script.info,
             _ => &ScriptInfo::default(),
@@ -156,20 +156,31 @@ impl Status {
         let mut flag: u32 = 0;
 
         if info.sync {
-            flag |= ffi::ConfigFlags::FLAG_VSYNC_HINT as u32;
+            flag |= ConfigFlags_FLAG_VSYNC_HINT as u32;
         }
         if info.msaa {
-            flag |= ffi::ConfigFlags::FLAG_MSAA_4X_HINT as u32;
+            flag |= ConfigFlags_FLAG_MSAA_4X_HINT as u32;
         }
         if info.scale {
-            flag |= ffi::ConfigFlags::FLAG_WINDOW_HIGHDPI as u32;
+            flag |= ConfigFlags_FLAG_WINDOW_HIGHDPI as u32;
         }
+        // hack.
+        flag |= ConfigFlags_FLAG_WINDOW_RESIZABLE;
 
         unsafe {
-            ffi::SetConfigFlags(flag);
+            SetConfigFlags(flag);
+
+            // create RL window, thread.
+            InitWindow(
+                info.size.0,
+                info.size.1,
+                Script::rust_to_c_string(&info.name).unwrap().as_ptr(),
+            );
+
+            R3D_Init(info.size.0, info.size.1, 0);
         }
 
-        // create RL window, thread.
+        /*
         let (mut handle, thread) = raylib::init()
             .title(&info.name)
             .size(info.size.0, info.size.1)
@@ -190,24 +201,29 @@ impl Status {
             .set_interlaced_hint(info.interlace);
 
         handle.set_window_state(state);
+        */
 
         unsafe {
             if info.no_border {
-                ffi::SetWindowState(ffi::ConfigFlags::FLAG_BORDERLESS_WINDOWED_MODE as u32);
+                SetWindowState(ConfigFlags_FLAG_BORDERLESS_WINDOWED_MODE as u32);
             }
             if info.mouse_pass {
-                ffi::SetWindowState(ffi::ConfigFlags::FLAG_WINDOW_MOUSE_PASSTHROUGH as u32);
+                SetWindowState(ConfigFlags_FLAG_WINDOW_MOUSE_PASSTHROUGH as u32);
             }
+
+            // cap frame-rate.
+            SetTargetFPS(info.rate as i32);
         }
 
-        // cap frame-rate.
-        handle.set_target_fps(info.rate);
-
         // create RL audio context.
-        let audio = RaylibAudio::init_audio_device()
-            .map_err(|e| Self::panic(&e.to_string()))
-            .unwrap();
+        //let audio = RaylibAudio::init_audio_device()
+        //    .map_err(|e| Self::panic(&e.to_string()))
+        //    .unwrap();
+        unsafe {
+            InitAudioDevice();
+        }
 
+        /*
         if let Some(icon) = &info.icon {
             if !icon.is_empty() {
                 // load icon from info manifest.
@@ -223,32 +239,25 @@ impl Status {
                 .unwrap();
             handle.set_window_icon(icon);
         }
+        */
 
-        Some((handle, thread, audio))
+        //Some((handle, thread, audio))
     }
 
     // missing state, info.json does not exist.
-    pub async fn missing(
-        handle: &mut RaylibHandle,
-        thread: &RaylibThread,
-        //window: &mut Window,
-    ) -> Option<Status> {
-        None
-        //window.missing(handle, thread).await
+    pub async fn missing(window: &mut Window) -> Option<Status> {
+        window.missing().await
     }
 
     // success state.
-    pub async fn success(
-        context: &Option<(RaylibHandle, RaylibThread, RaylibAudio)>,
-        script: &Script,
-    ) -> Option<Status> {
+    pub async fn success(script: &Script) -> Option<Status> {
         match script.main().await {
             Ok(result) => {
                 if result {
-                    if context.is_some() {
-                        // need to do this, otherwise MAY cause an infinite hang.
-                        unsafe {
-                            ffi::PollInputEvents();
+                    // need to do this, otherwise MAY cause an infinite hang.
+                    unsafe {
+                        if IsWindowReady() {
+                            PollInputEvents();
                         }
                     }
 
@@ -261,11 +270,11 @@ impl Status {
             }
             // error, go to failure state.
             Err(result) => {
-                if context.is_some() {
-                    unsafe {
-                        ffi::EnableCursor();
-                        ffi::SetMouseOffset(0, 0);
-                        ffi::SetMouseScale(1.0, 1.0);
+                unsafe {
+                    if IsWindowReady() {
+                        EnableCursor();
+                        SetMouseOffset(0, 0);
+                        SetMouseScale(1.0, 1.0);
                     }
                 }
 
@@ -276,15 +285,10 @@ impl Status {
 
     // failure state.
     pub async fn failure(
-        //handle: &mut RaylibHandle,
-        //thread: &RaylibThread,
-        //window: &mut Window,
+        window: &mut Window,
         script: &Option<Script>,
         text: &str,
     ) -> Option<Status> {
-        return None;
-
-        /*
         // a script instance is available, and a crash-handler was set in Lua.
         if let Some(script) = script {
             if script.fail.is_some() {
@@ -293,7 +297,7 @@ impl Status {
                         if result {
                             // need to do this, otherwise MAY cause an infinite hang.
                             unsafe {
-                                ffi::PollInputEvents();
+                                PollInputEvents();
                             }
 
                             // return true, reload Alicia.
@@ -313,8 +317,7 @@ impl Status {
         }
 
         // no script instance is available, or a custom crash-handler has not been set.
-        window.failure(handle, thread, text).await
-        */
+        window.failure(text).await
     }
 
     // panic window, useful for when no RL context is available to display an error.

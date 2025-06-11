@@ -53,8 +53,8 @@ use crate::status::*;
 
 //================================================================
 
+use crate::base::helper::*;
 use mlua::prelude::*;
-//use raylib::prelude::*;
 
 //================================================================
 
@@ -105,7 +105,7 @@ fn get_box_2_box_2(lua: &Lua, (box_a, box_b): (LuaValue, LuaValue)) -> mlua::Res
     let box_a: Rectangle = lua.from_value(box_a)?;
     let box_b: Rectangle = lua.from_value(box_b)?;
 
-    unsafe { Ok(ffi::CheckCollisionRecs(box_a.into(), box_b.into())) }
+    unsafe { Ok(CheckCollisionRecs(box_a, box_b)) }
 }
 
 /* entry
@@ -122,14 +122,7 @@ fn get_circle_circle(
     let point_a: Vector2 = lua.from_value(point_a)?;
     let point_b: Vector2 = lua.from_value(point_b)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionCircles(
-            point_a.into(),
-            radius_a,
-            point_b.into(),
-            radius_b,
-        ))
-    }
+    unsafe { Ok(CheckCollisionCircles(point_a, radius_a, point_b, radius_b)) }
 }
 
 /* entry
@@ -146,13 +139,7 @@ fn get_circle_box_2(
     let point_a: Vector2 = lua.from_value(point_a)?;
     let box_a: Rectangle = lua.from_value(box_a)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionCircleRec(
-            point_a.into(),
-            radius_a,
-            box_a.into(),
-        ))
-    }
+    unsafe { Ok(CheckCollisionCircleRec(point_a, radius_a, box_a)) }
 }
 
 /* entry
@@ -170,14 +157,7 @@ fn get_circle_line(
     let line_a: Vector2 = lua.from_value(line_a)?;
     let line_b: Vector2 = lua.from_value(line_b)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionCircleLine(
-            point_a.into(),
-            radius_a,
-            line_a.into(),
-            line_b.into(),
-        ))
-    }
+    unsafe { Ok(CheckCollisionCircleLine(point_a, radius_a, line_a, line_b)) }
 }
 
 /* entry
@@ -191,7 +171,7 @@ fn get_point_box_2(lua: &Lua, (point_a, box_a): (LuaValue, LuaValue)) -> mlua::R
     let point_a: Vector2 = lua.from_value(point_a)?;
     let box_a: Rectangle = lua.from_value(box_a)?;
 
-    unsafe { Ok(ffi::CheckCollisionPointRec(point_a.into(), box_a.into())) }
+    unsafe { Ok(CheckCollisionPointRec(point_a, box_a)) }
 }
 
 /* entry
@@ -208,13 +188,7 @@ fn get_point_circle(
     let point: Vector2 = lua.from_value(point)?;
     let point_a: Vector2 = lua.from_value(point_a)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionPointCircle(
-            point.into(),
-            point_a.into(),
-            radius_a,
-        ))
-    }
+    unsafe { Ok(CheckCollisionPointCircle(point, point_a, radius_a)) }
 }
 
 /* entry
@@ -234,11 +208,8 @@ fn get_point_triangle(
     let point_c: Vector2 = lua.from_value(point_c)?;
 
     unsafe {
-        Ok(ffi::CheckCollisionPointTriangle(
-            point.into(),
-            point_a.into(),
-            point_b.into(),
-            point_c.into(),
+        Ok(CheckCollisionPointTriangle(
+            point, point_a, point_b, point_c,
         ))
     }
 }
@@ -258,14 +229,7 @@ fn get_point_line(
     let point_a: Vector2 = lua.from_value(point_a)?;
     let point_b: Vector2 = lua.from_value(point_b)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionPointLine(
-            point.into(),
-            point_a.into(),
-            point_b.into(),
-            threshold,
-        ))
-    }
+    unsafe { Ok(CheckCollisionPointLine(point, point_a, point_b, threshold)) }
 }
 
 /* entry
@@ -278,11 +242,10 @@ fn get_point_line(
 fn get_point_poly(lua: &Lua, (point, point_list): (LuaValue, LuaValue)) -> mlua::Result<bool> {
     let point: Vector2 = lua.from_value(point)?;
     let point_list: Vec<Vector2> = lua.from_value(point_list)?;
-    let point_list: Vec<ffi::Vector2> = point_list.iter().map(|x| x.into()).collect();
 
     unsafe {
-        Ok(ffi::CheckCollisionPointPoly(
-            point.into(),
+        Ok(CheckCollisionPointPoly(
+            point,
             point_list.as_ptr(),
             point_list.len() as i32,
         ))
@@ -304,16 +267,10 @@ fn get_line_line(
     let point_b: Vector2 = lua.from_value(point_b)?;
     let point_c: Vector2 = lua.from_value(point_c)?;
     let point_d: Vector2 = lua.from_value(point_d)?;
-    let mut point = ffi::Vector2 { x: 0.0, y: 0.0 };
+    let mut point = Vector2 { x: 0.0, y: 0.0 };
 
     unsafe {
-        if ffi::CheckCollisionLines(
-            point_a.into(),
-            point_b.into(),
-            point_c.into(),
-            point_d.into(),
-            &mut point,
-        ) {
+        if CheckCollisionLines(point_a, point_b, point_c, point_d, &mut point) {
             Ok((Some(point.x), Some(point.y)))
         } else {
             Ok((None, None))
@@ -336,7 +293,7 @@ fn get_box_2_box_2_difference(
     let box_b: Rectangle = lua.from_value(box_b)?;
 
     unsafe {
-        let value = ffi::GetCollisionRec(box_a.into(), box_b.into());
+        let value = GetCollisionRec(box_a, box_b);
         Ok((value.x, value.y, value.width, value.height))
     }
 }
@@ -357,14 +314,7 @@ fn get_sphere_sphere(
     let point_a: Vector3 = lua.from_value(point_a)?;
     let point_b: Vector3 = lua.from_value(point_b)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionSpheres(
-            point_a.into(),
-            radius_a,
-            point_b.into(),
-            radius_b,
-        ))
-    }
+    unsafe { Ok(CheckCollisionSpheres(point_a, radius_a, point_b, radius_b)) }
 }
 
 /* entry
@@ -378,7 +328,7 @@ fn get_box_3_box_3(lua: &Lua, (box_a, box_b): (LuaValue, LuaValue)) -> mlua::Res
     let box_a: BoundingBox = lua.from_value(box_a)?;
     let box_b: BoundingBox = lua.from_value(box_b)?;
 
-    unsafe { Ok(ffi::CheckCollisionBoxes(box_a.into(), box_b.into())) }
+    unsafe { Ok(CheckCollisionBoxes(box_a, box_b)) }
 }
 
 /* entry
@@ -395,13 +345,7 @@ fn get_box_3_sphere(
     let box_a: BoundingBox = lua.from_value(box_a)?;
     let point_a: Vector3 = lua.from_value(point_a)?;
 
-    unsafe {
-        Ok(ffi::CheckCollisionBoxSphere(
-            box_a.into(),
-            point_a.into(),
-            radius_a,
-        ))
-    }
+    unsafe { Ok(CheckCollisionBoxSphere(box_a, point_a, radius_a)) }
 }
 
 /* entry
@@ -427,7 +371,7 @@ fn get_ray_sphere(
     let point_a: Vector3 = lua.from_value(point_a)?;
 
     unsafe {
-        let value = ffi::GetRayCollisionSphere(ray_a.into(), point_a.into(), radius_a);
+        let value = GetRayCollisionSphere(ray_a, point_a, radius_a);
 
         if value.hit {
             Ok((
@@ -468,7 +412,7 @@ fn get_ray_box_3(
     let box_a: BoundingBox = lua.from_value(box_a)?;
 
     unsafe {
-        let value = ffi::GetRayCollisionBox(ray_a.into(), box_a.into());
+        let value = GetRayCollisionBox(ray_a, box_a);
 
         if value.hit {
             Ok((
@@ -511,12 +455,7 @@ fn get_ray_triangle(
     let point_c: Vector3 = lua.from_value(point_c)?;
 
     unsafe {
-        let value = ffi::GetRayCollisionTriangle(
-            ray_a.into(),
-            point_a.into(),
-            point_b.into(),
-            point_c.into(),
-        );
+        let value = GetRayCollisionTriangle(ray_a, point_a, point_b, point_c);
 
         if value.hit {
             Ok((
@@ -560,13 +499,7 @@ fn get_ray_quad(
     let point_d: Vector3 = lua.from_value(point_d)?;
 
     unsafe {
-        let value = ffi::GetRayCollisionQuad(
-            ray_a.into(),
-            point_a.into(),
-            point_b.into(),
-            point_c.into(),
-            point_d.into(),
-        );
+        let value = GetRayCollisionQuad(ray_a, point_a, point_b, point_c, point_d);
 
         if value.hit {
             Ok((

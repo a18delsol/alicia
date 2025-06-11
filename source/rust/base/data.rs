@@ -54,7 +54,7 @@ use crate::status::*;
 //================================================================
 
 use mlua::prelude::*;
-//use raylib::prelude::*;
+use crate::base::helper::*;
 
 //================================================================
 
@@ -218,7 +218,7 @@ fn compress(lua: &Lua, data: LuaValue) -> mlua::Result<Data<u8>> {
         let data = Data::get_buffer(data)?;
         let data = &data.0;
         let mut out = 0;
-        let value = ffi::CompressData(data.as_ptr(), data.len() as i32, &mut out);
+        let value = CompressData(data.as_ptr(), data.len() as i32, &mut out);
         let slice = std::slice::from_raw_parts(value, out as usize).to_vec();
 
         Data::new(lua, slice)
@@ -244,7 +244,7 @@ fn decompress(lua: &Lua, data: LuaValue) -> mlua::Result<Data<u8>> {
         let data = Data::get_buffer(data)?;
         let data = &data.0;
         let mut out = 0;
-        let value = ffi::DecompressData(data.as_ptr(), data.len() as i32, &mut out);
+        let value = DecompressData(data.as_ptr(), data.len() as i32, &mut out);
         let slice = Vec::from_raw_parts(value, out as usize, out as usize);
 
         Data::new(lua, slice)
@@ -271,7 +271,7 @@ fn encode(lua: &Lua, data: LuaValue) -> mlua::Result<Data<i8>> {
         let data = Data::get_buffer(data)?;
         let data = &data.0;
         let mut out = 0;
-        let value = ffi::EncodeDataBase64(data.as_ptr(), data.len() as i32, &mut out);
+        let value = EncodeDataBase64(data.as_ptr(), data.len() as i32, &mut out);
         let slice = Vec::from_raw_parts(value, out as usize, out as usize);
 
         Data::new(lua, slice)
@@ -296,7 +296,7 @@ fn decode(lua: &Lua, data: LuaValue) -> mlua::Result<Data<u8>> {
         let data = Data::get_buffer(data)?;
         let data = &data.0;
         let mut out = 0;
-        let value = ffi::DecodeDataBase64(data.as_ptr(), &mut out);
+        let value = DecodeDataBase64(data.as_ptr(), &mut out);
         let slice = Vec::from_raw_parts(value, out as usize, out as usize);
 
         Data::new(lua, slice)
@@ -326,9 +326,9 @@ fn hash(lua: &Lua, (data, kind): (LuaValue, Option<i32>)) -> mlua::Result<LuaVal
 
     unsafe {
         match kind {
-            0 => lua.to_value(&ffi::ComputeCRC32(data.as_mut_ptr(), data.len() as i32)),
+            0 => lua.to_value(&ComputeCRC32(data.as_mut_ptr(), data.len() as i32)),
             1 => {
-                let value = ffi::ComputeMD5(data.as_mut_ptr(), data.len() as i32);
+                let value = ComputeMD5(data.as_mut_ptr(), data.len() as i32);
                 let value = vec![
                     *value.wrapping_add(0),
                     *value.wrapping_add(1),
@@ -339,7 +339,7 @@ fn hash(lua: &Lua, (data, kind): (LuaValue, Option<i32>)) -> mlua::Result<LuaVal
                 lua.to_value(&value)
             }
             _ => {
-                let value = ffi::ComputeSHA1(data.as_mut_ptr(), data.len() as i32);
+                let value = ComputeSHA1(data.as_mut_ptr(), data.len() as i32);
                 let value = vec![
                     *value.wrapping_add(0),
                     *value.wrapping_add(1),

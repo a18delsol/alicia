@@ -50,6 +50,7 @@
 
 use crate::base::*;
 use crate::status::*;
+use crate::base::helper::*;
 
 //================================================================
 
@@ -167,12 +168,13 @@ impl Script {
             // this is causing lua to be unable to load main.lua initially...?
             println!(
                 "----> pre: {}",
-                Self::c_to_rust_string(raylib::ffi::GetWorkingDirectory())?
+                Self::c_to_rust_string(GetWorkingDirectory())?
             );
-            raylib::ffi::ChangeDirectory(Script::rust_to_c_string(&status_info.path)?.as_ptr());
+            std::env::set_current_dir(&status_info.path).unwrap();
+            //ChangeDirectory(Script::rust_to_c_string(&status_info.path)?.as_ptr());
             println!(
                 "----> post: {}",
-                Self::c_to_rust_string(raylib::ffi::GetWorkingDirectory())?
+                Self::c_to_rust_string(GetWorkingDirectory())?
             );
         }
 
@@ -270,6 +272,7 @@ impl Script {
         status_info: &StatusInfo,
         script_info: Option<&ScriptInfo>,
     ) -> mlua::Result<()> {
+        r3d::set_global       (lua, alicia, status_info, script_info)?;
         general::set_global   (lua, alicia, status_info, script_info)?;
         window::set_global    (lua, alicia, status_info, script_info)?;
         draw::set_global      (lua, alicia, status_info, script_info)?;
