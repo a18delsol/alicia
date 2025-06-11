@@ -234,13 +234,6 @@ local function window_border(self, shape, hover, index, focus, label, move)
     end
 
     -- draw border.
-    --alicia.draw_2d.draw_box_2_gradient(
-    --    box_2:new(shape.point + vector_2:new(0.0, shape.shape.point.y - (shape.shape.point.y * WINDOW_CARD_ROUND_SHAPE * 0.35)),
-    --        shape.shape + vector_2:new(0.0, (shape.shape.point.y * WINDOW_CARD_ROUND_SHAPE * 0.35) * 4.0)),
-    --    color:new(0, 0, 0, 99),
-    --    color:new(0, 0, 0, 0),
-    --    color:new(0, 0, 0, 0),
-    --    color:new(0, 0, 0, 99))
     alicia.draw_2d.draw_box_2_round(shape, WINDOW_CARD_ROUND_SHAPE, WINDOW_CARD_ROUND_COUNT, color)
 
     -- if label isn't nil...
@@ -481,13 +474,6 @@ function window:border(shape, round, count, b_color)
     b_color       = b_color or WINDOW_COLOR_PRIMARY_MAIN
 
     if window_check_draw(self, shape) then
-        alicia.draw_2d.draw_box_2_gradient(
-            box_2:new(shape.point + vector_2:new(0.0, shape.point.y - (shape.point.y * round * 0.35)),
-                shape.shape + vector_2:new(0.0, (shape.point.y * round * 0.35) * 4.0)),
-            color:new(0, 0, 0, 99),
-            color:new(0, 0, 0, 0),
-            color:new(0, 0, 0, 99),
-            color:new(0, 0, 0, 0))
         alicia.draw_2d.draw_box_2_round(shape,
             round,
             count,
@@ -1025,7 +1011,8 @@ function window:entry(shape, label, value, flag)
             shape.shape.y,
             WINDOW_FONT_SPACE)
 
-        alicia.draw_2d.draw_box_2(box_2:new(shape.point.x + measure + 4.0, shape.point.y, 2.0, shape.shape.y),
+        alicia.draw_2d.draw_box_2(
+            box_2:new(shape.point + vector_2:new(measure + 4.0, 0.0), vector_2:new(2.0, shape.shape.y)),
             vector_2:zero(),
             0.0, color:white())
     end

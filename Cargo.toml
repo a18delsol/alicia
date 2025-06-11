@@ -35,7 +35,6 @@ embed         = ["dep:rust-embed"]
 documentation = []
 
 [dependencies]
-#raylib       = { git = "https://github.com/raylib-rs/raylib-rs.git", features = ["with_serde"] }
 mlua         = { version = "0.10.5", features = ["luajit52", "vendored", "serialize", "send", "async"] }
 tokio        = { version = "1",      features = ["full"]   }
 serde  	     = { version = "1.0",    features = ["derive"] }
@@ -47,8 +46,8 @@ serde-xml-rs = { optional = true, version = "0.6.0"  }
 serde_ini  	 = { optional = true, version = "0.2.0"  }
 sysinfo      = { optional = true, version = "0.33.1", features = ["serde"]  }
 notify       = { optional = true, version = "8.0.0",  features = ["serde"] }
-rapier3d     = { optional = true, version = "0.22.0", features = ["simd-stable", "serde-serialize", "debug-render"] }
-rapier2d     = { optional = true, version = "0.22.0", features = ["simd-stable", "serde-serialize", "debug-render"] }
+rapier3d     = { optional = true, version = "0.26.1", features = ["simd-stable", "serde-serialize", "debug-render"] }
+rapier2d     = { optional = true, version = "0.26.1", features = ["simd-stable", "serde-serialize", "debug-render"] }
 zip          = { optional = true, version = "2.2.2"  }
 reqwest      = { optional = true, version = "0.12", features = ["json"] }
 steamworks   = { optional = true, version = "0.11.0" }

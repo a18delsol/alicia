@@ -61,12 +61,14 @@ fn main() {
     use cmake::Config;
 
     let dst = Config::new("source/rust/base/external/r3d-master/external/raylib")
+        //.define("CMAKE_BUILD_TYPE", "Release")
         .build_target(".")
         .build();
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=raylib");
 
     let dst = Config::new("source/rust/base/external/r3d-master")
+        //.define("CMAKE_BUILD_TYPE", "Release")
         .define("R3D_RAYLIB_VENDORED", "1")
         .build();
     println!("cargo:rustc-link-search=native={}/build", dst.display());
