@@ -104,8 +104,11 @@ impl Drop for LuaModel {
                     let map = *material.maps.wrapping_add(i);
 
                     if IsTextureValid(map.texture) {
-                        // apparently every model is also bound to the internal RL texture? what?
-                        if map.texture.id != 1 {
+                        // apparently unloading either 1 or 13 will cause a nasty bug for some reason.
+                        // 1 is raylib's default texture,
+                        // 13 might be R3D's own texture.
+                        // deallocating either of them will cause memory corruption!
+                        if map.texture.id != 1 && map.texture.id != 13 {
                             UnloadTexture(map.texture);
                         }
                     }

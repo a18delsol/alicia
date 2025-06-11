@@ -168,6 +168,9 @@ function scene:new()
     i.rapier:set_rigid_body_user_data(i.static, 0)
     i.rapier:set_rigid_body_user_data(i.sensor, 1)
 
+    alicia.r3d.set_back_color(color:black())
+    alicia.r3d.set_base_color(color:new(33.0, 33.0, 33.0, 255.0))
+
     return i
 end
 
@@ -175,10 +178,10 @@ end
 
 -- TO-DO remove ...
 function scene:cast_ray_normal(...)
-    local collider, time, n_x, n_y, n_z = self.rapier:cast_ray_normal(...)
+    local solid_body, time, n_x, n_y, n_z = self.rapier:cast_ray_normal(...)
 
-    if collider then
-        local parent = self.rapier:get_collider_parent(collider)
+    if solid_body then
+        local parent = self.rapier:get_solid_body_parent(solid_body)
         local entity = self.rapier:get_rigid_body_user_data(parent)
         return self:entity_find(entity), time, vector_3:new(n_x, n_y, n_z)
     end
@@ -188,10 +191,10 @@ end
 
 -- TO-DO remove ...
 function scene:cast_ray(...)
-    local collider, time = self.rapier:cast_ray(...)
+    local solid_body, time = self.rapier:cast_ray(...)
 
-    if collider then
-        local parent = self.rapier:get_collider_parent(collider)
+    if solid_body then
+        local parent = self.rapier:get_solid_body_parent(solid_body)
         local entity = self.rapier:get_rigid_body_user_data(parent)
         return self:entity_find(entity), time
     end
@@ -224,10 +227,14 @@ function scene:entity_detach(entity)
         -- but i'm not sure if it's desirable to fix it this way?
         self.rapier:step()
     else
-        if entity.collider then
-            self.rapier:collider_remove(entity.collider)
+        if entity.solid_body then
+            self.rapier:solid_body_remove(entity.solid_body)
             self.rapier:step()
         end
+    end
+
+    if entity.entity_detach then
+        entity:entity_detach(self)
     end
 
     table.remove_object(self.entity_array, entity)
@@ -268,8 +275,8 @@ function scene:update(call, step, ...)
 
         if collision then
             for _, event in ipairs(collision) do
-                local rigid_a  = self.rapier:get_collider_parent(event.handle_a)
-                local rigid_b  = self.rapier:get_collider_parent(event.handle_b)
+                local rigid_a  = self.rapier:get_solid_body_parent(event.handle_a)
+                local rigid_b  = self.rapier:get_solid_body_parent(event.handle_b)
                 local entity_a = self.rapier:get_rigid_body_user_data(rigid_a)
                 local entity_b = self.rapier:get_rigid_body_user_data(rigid_b)
 
@@ -280,10 +287,10 @@ function scene:update(call, step, ...)
 
                     if entity_a == 1 then
                         entity = self:entity_find(entity_b)
-                        room   = self:entity_find(self.rapier:get_collider_user_data(event.handle_a))
+                        room   = self:entity_find(self.rapier:get_solid_body_user_data(event.handle_a))
                     else
                         entity = self:entity_find(entity_a)
-                        room   = self:entity_find(self.rapier:get_collider_user_data(event.handle_b))
+                        room   = self:entity_find(self.rapier:get_solid_body_user_data(event.handle_b))
                     end
 
                     -- if entity and room are valid...
@@ -315,7 +322,51 @@ function scene:update(call, step, ...)
     end
 end
 
+function scene:light_attach()
+    local light = alicia.r3d.light.new(2)
+
+    table.insert(self.light, light)
+
+    return light
+end
+
+function scene:light_detach(light)
+    table.remove_object(self.light, light)
+end
+
+function scene:set_state(state)
+    -- resume/pause all sound.
+    for _, sound in ipairs(self.sound) do
+        local sound = self.system:get_sound(sound.path)
+
+        if state then
+            sound:resume(sound.alias)
+        else
+            sound:pause(sound.alias)
+        end
+    end
+
+    -- resume/pause all music.
+    for _, music in ipairs(self.music) do
+        local music = self.system:get_music(music.path)
+
+        if state then
+            music:resume()
+        else
+            music:pause()
+        end
+    end
+
+    -- enable/disable all light.
+    for _, light in ipairs(self.light) do
+        print("light: " .. tostring(state))
+        light:set_state(state)
+    end
+end
+
 function scene:draw(call_main, call_side)
+    collectgarbage("collect")
+
     --[[ update sound/music volume/pan. ]]
 
     audio_update(self.sound, self.system.get_sound)
@@ -323,32 +374,22 @@ function scene:draw(call_main, call_side)
 
     --[[ main 3D pass. ]]
 
-    if true then
-        for _, light in ipairs(self.light) do
-            light:set_state(1)
+    alicia.r3d.begin(function()
+        for _, room in ipairs(self.room_array) do
+            room.active = false
         end
 
-        alicia.r3d.begin(function()
-            for _, room in ipairs(self.room_array) do
-                room.active = false
+        for _, room in ipairs(self.room_array) do
+            if get_point_box_3(self.camera_3d.point, room.size) then
+                room:draw(self, true)
+                break
             end
-
-            for _, room in ipairs(self.room_array) do
-                if get_point_box_3(self.camera_3d.point, room.size) then
-                    room:draw(self, true)
-                    break
-                end
-            end
-
-            if call_main then
-                call_main()
-            end
-        end, self.camera_3d)
-
-        for _, light in ipairs(self.light) do
-            light:set_state(0)
         end
-    end
+
+        if call_main then
+            call_main()
+        end
+    end, self.camera_3d)
 
     --[[ side 3D pass. ]]
 
@@ -576,15 +617,15 @@ function room:new(scene, path)
     local shape = (i.size.max - i.size.min) * 0.5
 
     -- create sensor bound box around room.
-    local collider = scene.rapier:collider_builder(scene.sensor, 0, shape)
-    scene.rapier:set_collider_sensor(collider, true)
-    scene.rapier:set_collider_position(collider, point)
-    scene.rapier:set_collider_user_data(collider, i.index)
+    local solid_body = scene.rapier:solid_body(scene.sensor, 0, shape)
+    scene.rapier:set_solid_body_sensor(solid_body, true)
+    scene.rapier:set_solid_body_position(solid_body, point)
+    scene.rapier:set_solid_body_user_data(solid_body, i.index)
 
     --[[]]
 
     for x = 0, model.mesh_count - 1 do
-        scene.rapier:collider_builder(scene.static, 1, model:mesh_vertex(x), model:mesh_index(x))
+        scene.rapier:solid_body(scene.static, 1, model:mesh_vertex(x), model:mesh_index(x))
     end
 
     table.insert(scene.room_array, i)

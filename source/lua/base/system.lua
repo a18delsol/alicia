@@ -159,8 +159,15 @@ function system:scan(search)
     -- embed loader
     -- lua loader, which will check for disk, .ZIP and embed, again.
     -- this should *probably* take the highest priority of all...?
+
+    -- must clone the virtual file-system table, as if system is set to nil,
+    -- the GC won't delete it as there is still a lingering reference from the package loader.
+    local locate = table.copy(self.locate)
+
+    -- TO-DO remove the previous instance of the package loader function if calling scan again
+
     table.insert(package.loaders, function(path)
-        local asset = self.locate[path .. ".lua"]
+        local asset = locate[path .. ".lua"]
 
         if asset then
             if asset.kind == FILE_KIND.DISK then
@@ -199,12 +206,8 @@ end
 
 ---Re-load every asset in memory.
 function system:load()
-    for path, _ in pairs(self.memory_data.texture) do
-        self:set_texture(path, true)
-    end
-    for path, _ in pairs(self.memory_data.model) do
-        self:set_model(path, true)
-    end
+    for path, _ in pairs(self.memory_data.texture) do self:set_texture(path, true) end
+    for path, _ in pairs(self.memory_data.model) do self:set_model(path, true) end
 end
 
 local function file_system_set_asset(self, memory_data, memory_list, call_new, call_new_memory, force, faux_path, ...)

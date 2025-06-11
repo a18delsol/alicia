@@ -156,7 +156,7 @@ impl mlua::UserData for Rapier {
                 { "name": "exclude_collider", "info": "TO-DO",        "kind": "table"   }
             ],
             "result": [
-                { "name": "collider_handle", "info": "Collider handle.", "kind": "table" }
+                { "name": "collider_handle", "info": "Solid body handle.", "kind": "table" }
             ]
         }
         */
@@ -378,10 +378,10 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:get_collider_shape_cuboid",
-            "info": "Get the shape of a collider (cuboid).",
+            "name": "rapier:get_solid_body_shape_cuboid",
+            "info": "Get the shape of a solid body (cuboid).",
             "member": [
-                { "name": "collider", "info": "Collider handle.", "kind": "table" }
+                { "name": "solid_body", "info": "Solid body handle.", "kind": "table" }
             ],
             "result": [
                 { "name": "half_shape_x", "info": "Half-shape of the cuboid. (X).", "kind": "number" },
@@ -390,7 +390,7 @@ impl mlua::UserData for Rapier {
             ]
         }
         */
-        method.add_method_mut("get_collider_shape", |lua, this, collider: LuaValue| {
+        method.add_method_mut("get_solid_body_shape", |lua, this, collider: LuaValue| {
             let collider: ColliderHandle = lua.from_value(collider)?;
 
             if let Some(collider) = this.collider_set.get(collider) {
@@ -408,22 +408,22 @@ impl mlua::UserData for Rapier {
             }
 
             Err(mlua::Error::runtime(
-                "rapier:get_collider_shape(): Invalid collider handle.",
+                "rapier:get_solid_body_shape(): Invalid solid body handle.",
             ))
         });
 
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:set_collider_shape",
-            "info": "Set the shape of a collider.",
+            "name": "rapier:set_solid_body_shape",
+            "info": "Set the shape of a solid body.",
             "member": [
-                { "name": "collider", "info": "Collider handle.", "kind": "table" }
+                { "name": "solid_body", "info": "Solid body handle.", "kind": "table" }
             ]
         }
         */
         method.add_method_mut(
-            "set_collider_shape",
+            "set_solid_body_shape",
             |lua, this, (collider, data): (LuaValue, mlua::Variadic<LuaValue>)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
 
@@ -445,7 +445,7 @@ impl mlua::UserData for Rapier {
                             shape.half_extents.z = half_shape.z;
                         } else {
                             return Err(mlua::Error::runtime(
-                                "rapier:set_collider_shape(): Missing half-shape argument (vector_3).",
+                                "rapier:set_solid_body_shape(): Missing half-shape argument (vector_3).",
                             ));
                         }
                     }
@@ -454,7 +454,7 @@ impl mlua::UserData for Rapier {
                 }
 
                 Err(mlua::Error::runtime(
-                    "rapier:set_collider_shape(): Invalid collider handle.",
+                    "rapier:set_solid_body_shape(): Invalid solid body handle.",
                 ))
             },
         );
@@ -464,17 +464,17 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:get_collider_parent",
-            "info": "Get the parent of a collider.",
+            "name": "rapier:get_solid_body_parent",
+            "info": "Get the parent of a solid body.",
             "member": [
-                { "name": "collider", "info": "Collider handle.", "kind": "table" }
+                { "name": "solid_body", "info": "Solid body handle.", "kind": "table" }
             ],
             "result": [
                 { "name": "rigid_body",   "info": "Rigid body handle.", "kind": "table" }
             ]
         }
         */
-        method.add_method_mut("get_collider_parent", |lua, this, collider: LuaValue| {
+        method.add_method_mut("get_solid_body_parent", |lua, this, collider: LuaValue| {
             let collider: ColliderHandle = lua.from_value(collider)?;
 
             if let Some(collider) = this.collider_set.get(collider) {
@@ -486,54 +486,57 @@ impl mlua::UserData for Rapier {
             }
 
             Err(mlua::Error::runtime(
-                "rapier:get_collider_parent(): Invalid collider handle.",
+                "rapier:get_solid_body_parent(): Invalid solid body handle.",
             ))
         });
 
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:get_collider_position",
-            "info": "Get the position of a collider.",
+            "name": "rapier:get_solid_body_position",
+            "info": "Get the position of a solid body.",
             "member": [
-                { "name": "collider", "info": "Collider handle.", "kind": "table" }
+                { "name": "solid_body", "info": "Solid body handle.", "kind": "table" }
             ],
             "result": [
-                { "name": "position_x", "info": "Collider position (X).", "kind": "number" },
-                { "name": "position_y", "info": "Collider position (Y).", "kind": "number" },
-                { "name": "position_z", "info": "Collider position (Z).", "kind": "number" }
-            ]
-        }
-        */
-        method.add_method_mut("get_collider_position", |lua, this, collider: LuaValue| {
-            let collider: ColliderHandle = lua.from_value(collider)?;
-
-            if let Some(collider) = this.collider_set.get(collider) {
-                return Ok((
-                    collider.translation().x,
-                    collider.translation().y,
-                    collider.translation().z,
-                ));
-            }
-
-            Err(mlua::Error::runtime(
-                "rapier:get_collider_position(): Invalid collider handle.",
-            ))
-        });
-
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "rapier:set_collider_position",
-            "info": "Set the position of a collider.",
-            "member": [
-                { "name": "collider", "info": "Collider handle.",   "kind": "table"    },
-                { "name": "position", "info": "Collider position.", "kind": "vector_3" }
+                { "name": "position_x", "info": "Solid body position (X).", "kind": "number" },
+                { "name": "position_y", "info": "Solid body position (Y).", "kind": "number" },
+                { "name": "position_z", "info": "Solid body position (Z).", "kind": "number" }
             ]
         }
         */
         method.add_method_mut(
-            "set_collider_position",
+            "get_solid_body_position",
+            |lua, this, collider: LuaValue| {
+                let collider: ColliderHandle = lua.from_value(collider)?;
+
+                if let Some(collider) = this.collider_set.get(collider) {
+                    return Ok((
+                        collider.translation().x,
+                        collider.translation().y,
+                        collider.translation().z,
+                    ));
+                }
+
+                Err(mlua::Error::runtime(
+                    "rapier:get_solid_body_position(): Invalid solid body handle.",
+                ))
+            },
+        );
+
+        /* entry
+        {
+            "version": "1.0.0",
+            "name": "rapier:set_solid_body_position",
+            "info": "Set the position of a solid body.",
+            "member": [
+                { "name": "solid_body", "info": "Solid body handle.",   "kind": "table"    },
+                { "name": "position", "info": "Solid body position.", "kind": "vector_3" }
+            ]
+        }
+        */
+        method.add_method_mut(
+            "set_solid_body_position",
             |lua, this, (collider, position): (LuaValue, LuaValue)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
                 let position: Vector3 = lua.from_value(position)?;
@@ -548,7 +551,7 @@ impl mlua::UserData for Rapier {
                 }
 
                 Err(mlua::Error::runtime(
-                    "rapier:set_collider_position(): Invalid collider handle.",
+                    "rapier:set_solid_body_position(): Invalid solid body handle.",
                 ))
             },
         );
@@ -556,16 +559,16 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:set_collider_rotation",
-            "info": "Set the rotation of a collider.",
+            "name": "rapier:set_solid_body_rotation",
+            "info": "Set the rotation of a solid body.",
             "member": [
-                { "name": "collider", "info": "Collider handle.",   "kind": "table"    },
-                { "name": "rotation", "info": "Collider rotation.", "kind": "vector_3" }
+                { "name": "solid_body", "info": "Solid body handle.",   "kind": "table"    },
+                { "name": "rotation", "info": "Solid body rotation.", "kind": "vector_3" }
             ]
         }
         */
         method.add_method_mut(
-            "set_collider_rotation",
+            "set_solid_body_rotation",
             |lua, this, (collider, rotation): (LuaValue, LuaValue)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
                 let rotation: Vector3 = lua.from_value(rotation)?;
@@ -577,7 +580,7 @@ impl mlua::UserData for Rapier {
                 }
 
                 Err(mlua::Error::runtime(
-                    "rapier:set_collider_rotation(): Invalid collider handle.",
+                    "rapier:set_solid_body_rotation(): Invalid solid body handle.",
                 ))
             },
         );
@@ -585,16 +588,16 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:set_collider_sensor",
-            "info": "Set the sensor state of a collider.",
+            "name": "rapier:set_solid_body_sensor",
+            "info": "Set the sensor state of a solid body.",
             "member": [
-                { "name": "collider", "info": "Collider handle.",       "kind": "table"   },
-                { "name": "sensor",   "info": "Collider sensor state.", "kind": "boolean" }
+                { "name": "solid_body", "info": "Solid body handle.",       "kind": "table"   },
+                { "name": "sensor",   "info": "Solid body sensor state.", "kind": "boolean" }
             ]
         }
         */
         method.add_method_mut(
-            "set_collider_sensor",
+            "set_solid_body_sensor",
             |lua, this, (collider, sensor): (LuaValue, bool)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
 
@@ -604,7 +607,7 @@ impl mlua::UserData for Rapier {
                 }
 
                 Err(mlua::Error::runtime(
-                    "rapier:set_collider_sensor(): Invalid collider handle.",
+                    "rapier:set_solid_body_sensor(): Invalid solid body handle.",
                 ))
             },
         );
@@ -614,11 +617,11 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:collider_remove",
-            "info": "Remove a collider.",
+            "name": "rapier:solid_body_remove",
+            "info": "Remove a solid body.",
             "member": [
-                { "name": "collider",    "info": "Collider handle.",                                                           "kind": "table"   },
-                { "name": "wake_parent", "info": "Whether or not to wake up the rigid body parent this collider is bound to.", "kind": "boolean" }
+                { "name": "solid_body",    "info": "Solid body handle.",                                                         "kind": "table"   },
+                { "name": "wake_parent", "info": "Whether or not to wake up the rigid body parent this solid body is bound to.", "kind": "boolean" }
             ]
         }
         */
@@ -644,8 +647,8 @@ impl mlua::UserData for Rapier {
             "name": "rapier:rigid_body_remove",
             "info": "Remove a rigid body.",
             "member": [
-                { "name": "rigid_body",      "info": "Rigid body handle.",                                                   "kind": "table"   },
-                { "name": "remove_collider", "info": "Whether or not to remove every collider this rigid body is bound to.", "kind": "boolean" }
+                { "name": "rigid_body",        "info": "Rigid body handle.",                                                     "kind": "table"   },
+                { "name": "remove_solid_body", "info": "Whether or not to remove every solid body this rigid body is bound to.", "kind": "boolean" }
             ]
         }
         */
@@ -793,7 +796,7 @@ impl mlua::UserData for Rapier {
             "member": [
                 { "name": "step",        "info": "TO-DO", "kind": "number"   },
                 { "name": "character",   "info": "TO-DO", "kind": "table"    },
-                { "name": "collider",    "info": "TO-DO", "kind": "table"    },
+                { "name": "solid_body",    "info": "TO-DO", "kind": "table"  },
                 { "name": "translation", "info": "TO-DO", "kind": "vector_3" }
             ],
             "result": [
@@ -981,41 +984,44 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:get_collider_user_data",
-            "info": "Get the user data of a collider.",
+            "name": "rapier:get_solid_body_user_data",
+            "info": "Get the user data of a solid body.",
             "member": [
-                { "name": "collider", "info": "Collider handle.", "kind": "userdata" }
+                { "name": "solid_body", "info": "Solid body handle.", "kind": "userdata" }
             ],
             "result": [
-                { "name": "user_data", "info": "Collider user data.", "kind": "number" }
-            ]
-        }
-        */
-        method.add_method_mut("get_collider_user_data", |lua, this, collider: LuaValue| {
-            let collider: ColliderHandle = lua.from_value(collider)?;
-
-            if let Some(collider) = this.collider_set.get(collider) {
-                return Ok(collider.user_data);
-            }
-
-            Err(mlua::Error::runtime(
-                "rapier:get_collider_user_data(): Invalid collider handle.",
-            ))
-        });
-
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "rapier:set_collider_user_data",
-            "info": "Set the user data of a collider.",
-            "member": [
-                { "name": "collider",  "info": "Collider handle.",    "kind": "userdata" },
-                { "name": "user_data", "info": "Collider user data.", "kind": "number"   }
+                { "name": "user_data", "info": "Solid body user data.", "kind": "number" }
             ]
         }
         */
         method.add_method_mut(
-            "set_collider_user_data",
+            "get_solid_body_user_data",
+            |lua, this, collider: LuaValue| {
+                let collider: ColliderHandle = lua.from_value(collider)?;
+
+                if let Some(collider) = this.collider_set.get(collider) {
+                    return Ok(collider.user_data);
+                }
+
+                Err(mlua::Error::runtime(
+                    "rapier:get_solid_body_user_data(): Invalid solid body handle.",
+                ))
+            },
+        );
+
+        /* entry
+        {
+            "version": "1.0.0",
+            "name": "rapier:set_solid_body_user_data",
+            "info": "Set the user data of a solid body.",
+            "member": [
+                { "name": "solid_body",  "info": "Solid body handle.",    "kind": "userdata" },
+                { "name": "user_data", "info": "Solid body user data.", "kind": "number"   }
+            ]
+        }
+        */
+        method.add_method_mut(
+            "set_solid_body_user_data",
             |lua, this, (collider, user_data): (LuaValue, u128)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
 
@@ -1025,7 +1031,7 @@ impl mlua::UserData for Rapier {
                 }
 
                 Err(mlua::Error::runtime(
-                    "rapier:set_collider_user_data(): Invalid collider handle.",
+                    "rapier:set_solid_body_user_data(): Invalid solid body handle.",
                 ))
             },
         );
@@ -1035,18 +1041,12 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:collider_builder",
-            "info": "Create a collider builder.",
-            "member": [
-                { "name": "half_shape", "info": "Half-shape of cuboid.", "kind": "vector_3" }
-            ],
-            "result": [
-                { "name": "collider_builer", "info": "Collider builder.", "kind": "table" }
-            ]
+            "name": "rapier:solid_body",
+            "info": "TO-DO"
         }
         */
         method.add_method_mut(
-            "collider_builder",
+            "solid_body",
             |lua, this, (rigid_body, kind, data): (Option<LuaValue>, i32, mlua::Variadic<LuaValue>)| {
                 match kind {
                     0 => {
@@ -1060,7 +1060,7 @@ impl mlua::UserData for Rapier {
                             )
                         } else {
                             Err(mlua::Error::runtime(
-                                "rapier:collider_builder(): Missing half-shape (vector_3) argument.",
+                                "rapier:solid_body(): Missing half-shape (vector_3) argument.",
                             ))
                         }
                     },
@@ -1097,7 +1097,7 @@ impl mlua::UserData for Rapier {
                             )
                         } else {
                             Err(mlua::Error::runtime(
-                                "rapier:collider_builder(): Missing point table ({ vector_3 }) or index table ({ vector_3 }) argument.",
+                                "rapier:solid_body(): Missing point table ({ vector_3 }) or index table ({ vector_3 }) argument.",
                             ))
                         }
                     }
@@ -1117,7 +1117,7 @@ impl mlua::UserData for Rapier {
                             }
                         } else {
                             Err(mlua::Error::runtime(
-                                "rapier:collider_builder(): Missing point table ({ vector_3 }) argument.",
+                                "rapier:solid_body(): Missing point table ({ vector_3 }) argument.",
                             ))
                         }
                     }
