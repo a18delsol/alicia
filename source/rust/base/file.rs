@@ -50,11 +50,13 @@
 
 use crate::script::*;
 use crate::status::*;
+use std::sync::mpsc::Receiver;
+use std::thread::JoinHandle;
 
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 
 //================================================================
 
@@ -100,7 +102,94 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 
     table.set("file", file)?;
 
+    //================================================================
+
+    let file_watcher = lua.create_table()?;
+
+    file_watcher.set("new", lua.create_function(FileWatcher::new)?)?;
+
+    table.set("file_watcher", file_watcher)?;
+
     Ok(())
+}
+
+use notify::{Config, PollWatcher, RecursiveMode, Watcher};
+
+/* class
+{
+    "version": "1.0.0",
+    "name": "file_watcher",
+    "info": "TO-DO"
+}
+*/
+pub struct FileWatcher(PollWatcher, JoinHandle<()>, Receiver<notify::Event>);
+
+impl FileWatcher {
+    /* entry
+    {
+        "version": "1.0.0",
+        "name": "alicia.file_watcher.new",
+        "info": "TO-DO"
+    }
+    */
+    fn new(lua: &Lua, path: String) -> mlua::Result<Self> {
+        let path = ScriptData::get_path(lua, &path)?;
+
+        println!("creating FW: {path}");
+
+        let (tx_a, rx_a) = std::sync::mpsc::channel();
+        let (tx, rx) = std::sync::mpsc::channel();
+        // use the PollWatcher and disable automatic polling
+        let mut watcher = PollWatcher::new(tx, Config::default().with_manual_polling()).unwrap();
+
+        // Add a path to be watched. All files and directories at that path and
+        // below will be monitored for changes.
+        watcher
+            .watch(path.as_ref(), RecursiveMode::Recursive)
+            .unwrap();
+
+        // run event receiver on a different thread, we want this one for user input
+        let handle = std::thread::spawn(move || {
+            for res in rx {
+                match res {
+                    Ok(event) => tx_a.send(event).unwrap(),
+                    _ => {} //Err(e) => println!("watch error: {:?}", e),
+                }
+            }
+        });
+
+        // manually poll for changes, received by the spawned thread
+        //watcher.poll().unwrap();
+
+        Ok(Self(watcher, handle, rx_a))
+    }
+}
+
+impl mlua::UserData for FileWatcher {
+    fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
+        /* entry
+        {
+            "version": "1.0.0",
+            "name": "file_watcher:poll",
+            "info": "TO-DO"
+        }
+        */
+        method.add_method_mut("poll", |lua, this, ()| {
+            this.0.poll().unwrap();
+
+            if let Ok(event) = this.2.try_recv() {
+                let path: Vec<String> = event
+                    .paths
+                    .iter()
+                    .map(|x| x.to_str().unwrap().to_string())
+                    .collect();
+
+                lua.to_value(&path)
+            } else {
+                Ok(mlua::Nil)
+            }
+        });
+    }
 }
 
 /* entry
@@ -118,7 +207,8 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
     ]
 }
 */
-fn get_file(lua: &Lua, (path, binary): (String, bool)) -> mlua::Result<LuaValue> {
+// TO-DO swap binary and buffer around.
+fn get_file(lua: &Lua, (path, binary, buffer): (String, bool, bool)) -> mlua::Result<LuaValue> {
     if binary {
         let data = std::fs::read(ScriptData::get_path(lua, &path)?)
             .map_err(|e| mlua::Error::runtime(e.to_string()))?;
@@ -127,10 +217,20 @@ fn get_file(lua: &Lua, (path, binary): (String, bool)) -> mlua::Result<LuaValue>
 
         Ok(mlua::Value::UserData(data))
     } else {
-        let data = std::fs::read_to_string(ScriptData::get_path(lua, &path)?)
-            .map_err(|e| mlua::Error::runtime(e.to_string()))?;
+        if buffer {
+            let data: Vec<String> = std::fs::read_to_string(ScriptData::get_path(lua, &path)?)
+                .map_err(|e| mlua::Error::runtime(e.to_string()))?
+                .lines()
+                .map(String::from)
+                .collect();
 
-        lua.to_value(&data)
+            lua.to_value(&data)
+        } else {
+            let data = std::fs::read_to_string(ScriptData::get_path(lua, &path)?)
+                .map_err(|e| mlua::Error::runtime(e.to_string()))?;
+
+            lua.to_value(&data)
+        }
     }
 }
 

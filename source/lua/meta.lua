@@ -463,11 +463,12 @@ function alicia.rapier.new() end
 ---@param length number # Ray length.
 ---@param solid boolean # TO-DO
 ---@param exclude_rigid table # TO-DO
----@return table rigid_body # Rigid body handle.
+---@param exclude_collider table # TO-DO
+---@return table collider_handle # Collider handle.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L162)
-function rapier:cast_ray(ray,length,solid,exclude_rigid) end
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L163)
+function rapier:cast_ray(ray,length,solid,exclude_rigid,exclude_collider) end
 
 ---Cast a ray, and also get the normal information..
 ---@param ray ray # Ray to cast.
@@ -477,19 +478,19 @@ function rapier:cast_ray(ray,length,solid,exclude_rigid) end
 ---@return table rigid_body # Rigid body handle.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L220)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L221)
 function rapier:cast_ray_normal(ray,length,solid,exclude_rigid) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L274)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L276)
 function rapier:test_intersect_cuboid_cuboid() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L318)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L320)
 function rapier:test_intersect_cuboid() end
 
 ---Get the shape of a collider (cuboid).
@@ -499,23 +500,22 @@ function rapier:test_intersect_cuboid() end
 ---@return number half_shape_z # Half-shape of the cuboid. (Z).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L389)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L391)
 function rapier:get_collider_shape_cuboid(collider) end
 
----Set the shape of a collider (cuboid).
+---Set the shape of a collider.
 ---@param collider table # Collider handle.
----@param half_shape vector_3 # Half-shape of cuboid.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L425)
-function rapier:set_collider_shape_cuboid(collider,half_shape) end
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L423)
+function rapier:set_collider_shape(collider) end
 
 ---Get the parent of a collider.
 ---@param collider table # Collider handle.
 ---@return table rigid_body # Rigid body handle.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L466)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L475)
 function rapier:get_collider_parent(collider) end
 
 ---Get the position of a collider.
@@ -525,7 +525,7 @@ function rapier:get_collider_parent(collider) end
 ---@return number position_z # Collider position (Z).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L497)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L506)
 function rapier:get_collider_position(collider) end
 
 ---Set the position of a collider.
@@ -533,7 +533,7 @@ function rapier:get_collider_position(collider) end
 ---@param position vector_3 # Collider position.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L524)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L533)
 function rapier:set_collider_position(collider,position) end
 
 ---Set the rotation of a collider.
@@ -541,7 +541,7 @@ function rapier:set_collider_position(collider,position) end
 ---@param rotation vector_3 # Collider rotation.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L552)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L561)
 function rapier:set_collider_rotation(collider,rotation) end
 
 ---Set the sensor state of a collider.
@@ -549,7 +549,7 @@ function rapier:set_collider_rotation(collider,rotation) end
 ---@param sensor boolean # Collider sensor state.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L581)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L590)
 function rapier:set_collider_sensor(collider,sensor) end
 
 ---Remove a collider.
@@ -557,7 +557,7 @@ function rapier:set_collider_sensor(collider,sensor) end
 ---@param wake_parent boolean # Whether or not to wake up the rigid body parent this collider is bound to.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L610)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L619)
 function rapier:collider_remove(collider,wake_parent) end
 
 ---Remove a rigid body.
@@ -565,38 +565,38 @@ function rapier:collider_remove(collider,wake_parent) end
 ---@param remove_collider boolean # Whether or not to remove every collider this rigid body is bound to.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L637)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L646)
 function rapier:rigid_body_remove(rigid_body,remove_collider) end
 
 ---Create a character controller.
 ---@return table character_controller # Character controller.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L665)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L674)
 function rapier:character_controller() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L676)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L685)
 function rapier:set_character_controller_up_vector() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L693)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L702)
 function rapier:set_character_controller_slope() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L710)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L719)
 function rapier:set_character_auto_step() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L757)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L766)
 function rapier:set_character_snap_ground() end
 
 ---Move a character controller.
@@ -611,7 +611,7 @@ function rapier:set_character_snap_ground() end
 ---@return boolean slope # Currently on slope.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L793)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L802)
 function rapier:character_controller_move(step,character,collider,translation) end
 
 ---Create a rigid body.
@@ -619,7 +619,7 @@ function rapier:character_controller_move(step,character,collider,translation) e
 ---@return table rigid_body # Rigid body handle.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L842)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L847)
 function rapier:rigid_body(kind) end
 
 ---Get the user data of a rigid_body.
@@ -627,7 +627,7 @@ function rapier:rigid_body(kind) end
 ---@return number user_data # Rigid body user data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L866)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L871)
 function rapier:get_rigid_body_user_data(rigid_body) end
 
 ---Set the user data of a rigid_body.
@@ -635,7 +635,7 @@ function rapier:get_rigid_body_user_data(rigid_body) end
 ---@param user_data number # Rigid body user data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L892)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L897)
 function rapier:set_rigid_body_user_data(rigid_body,user_data) end
 
 ---Set the position of a rigid_body.
@@ -643,7 +643,7 @@ function rapier:set_rigid_body_user_data(rigid_body,user_data) end
 ---@param position vector_3 # rigid_body position.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L919)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L924)
 function rapier:set_rigid_body_position(rigid_body,position) end
 
 ---Set the rotation of a rigid_body.
@@ -651,7 +651,7 @@ function rapier:set_rigid_body_position(rigid_body,position) end
 ---@param rotation vector_3 # rigid_body rotation.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L948)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L953)
 function rapier:set_rigid_body_rotation(rigid_body,rotation) end
 
 ---Get the user data of a collider.
@@ -659,7 +659,7 @@ function rapier:set_rigid_body_rotation(rigid_body,rotation) end
 ---@return number user_data # Collider user data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L983)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L988)
 function rapier:get_collider_user_data(collider) end
 
 ---Set the user data of a collider.
@@ -667,44 +667,27 @@ function rapier:get_collider_user_data(collider) end
 ---@param user_data number # Collider user data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1006)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1011)
 function rapier:set_collider_user_data(collider,user_data) end
 
----Create a collider builder (cuboid).
+---Create a collider builder.
 ---@param half_shape vector_3 # Half-shape of cuboid.
 ---@return table collider_builer # Collider builder.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1037)
-function rapier:collider_builder_cuboid(half_shape) end
-
----Create a collider builder (tri-mesh).
----@param point_table table # The point array table.
----@param index_table table # The index array table.
----@return table collider_builer # Collider builder.
----
---- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1064)
-function rapier:collider_builder_tri_mesh(point_table,index_table) end
-
----Create a collider builder (convex hull).
----@param vector_table table # A vector_3 vertex array table.
----@return table collider_builer # Collider builder.
----
---- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1112)
-function rapier:collider_builder_convex_hull(vector_table) end
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1042)
+function rapier:collider_builder(half_shape) end
 
 ---Step the Rapier simulation.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1137)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1129)
 function rapier:step() end
 
 ---Render the Rapier simulation.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1175)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/rapier.rs#L1167)
 function rapier:debug_render() end
 
 ---The Steam API.
@@ -1248,7 +1231,7 @@ alicia.texture = {}
 ---An unique handle for a texture in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L193)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L237)
 ---@class texture
 ---@field shape_x number # Shape of the texture (X).
 ---@field shape_y number # Shape of the texture (Y).
@@ -1257,28 +1240,34 @@ texture = {}
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L210)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L254)
 function texture:to_image() end
 
 ---Set the mipmap for a texture.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L221)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L265)
 function texture:set_mipmap() end
 
 ---Set the filter for a texture.
 ---@param filter texture_filter # Texture filter.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L238)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L282)
 function texture:set_filter(filter) end
 
 ---Set the wrap for a texture.
 ---@param wrap texture_wrap # Texture wrap.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L255)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L299)
 function texture:set_wrap(wrap) end
+
+---TO-DO
+---
+--- ---
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L313)
+function texture:draw_plane() end
 
 ---Draw a texture.
 ---@param point vector_2 # TO-DO
@@ -1287,7 +1276,7 @@ function texture:set_wrap(wrap) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L275)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L345)
 function texture:draw(point,angle,scale,color) end
 
 ---Draw a texture (pro).
@@ -1298,7 +1287,7 @@ function texture:draw(point,angle,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L296)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L366)
 function texture:draw_pro(box_a,box_b,point,angle,color) end
 
 ---Draw a billboard texture.
@@ -1308,7 +1297,7 @@ function texture:draw_pro(box_a,box_b,point,angle,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L327)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L397)
 function texture:draw_billboard(camera,point,scale,color) end
 
 ---Draw a billboard texture (pro).
@@ -1322,7 +1311,7 @@ function texture:draw_billboard(camera,point,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L356)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L426)
 function texture:draw_billboard_pro(camera,source,point,up,scale,origin,angle,color) end
 
 ---Create a new texture resource.
@@ -1330,19 +1319,19 @@ function texture:draw_billboard_pro(camera,source,point,up,scale,origin,angle,co
 ---@return texture texture # Texture resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L395)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L465)
 function alicia.texture.new(path) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L418)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L488)
 function alicia.texture.new_from_memory() end
 
 ---An unique handle for a render texture in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L468)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L538)
 ---@class render_texture
 ---@field shape_x number # Shape of the texture (X).
 ---@field shape_y number # Shape of the texture (Y).
@@ -1352,8 +1341,14 @@ render_texture = {}
 ---@param call function # The draw code.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L488)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L558)
 function render_texture:begin(call) end
+
+---TO-DO
+---
+--- ---
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L579)
+function render_texture:draw_plane() end
 
 ---Draw a texture.
 ---@param point vector_2 # TO-DO
@@ -1362,7 +1357,7 @@ function render_texture:begin(call) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L513)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L619)
 function render_texture:draw(point,angle,scale,color) end
 
 ---Draw a texture (pro).
@@ -1373,7 +1368,7 @@ function render_texture:draw(point,angle,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L537)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L643)
 function render_texture:draw_pro(box_a,box_b,point,angle,color) end
 
 ---Create a new render texture resource.
@@ -1381,7 +1376,7 @@ function render_texture:draw_pro(box_a,box_b,point,angle,color) end
 ---@return render_texture render_texture # Render texture resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L571)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/texture.rs#L677)
 function alicia.render_texture.new(shape) end
 
 ---The ZIP API.
@@ -1473,13 +1468,13 @@ function alicia.model.new(path) end
 ---@param texture texture # Texture to bind to model.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L151)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L165)
 function model:bind(index,which,texture) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L186)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L200)
 function model:draw_mesh() end
 
 ---Draw the model.
@@ -1488,7 +1483,7 @@ function model:draw_mesh() end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L219)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L233)
 function model:draw(point,scale,color) end
 
 ---Draw the model (wire-frame).
@@ -1497,7 +1492,7 @@ function model:draw(point,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L242)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L265)
 function model:draw_wire(point,scale,color) end
 
 ---Draw the model with a transformation.
@@ -1507,7 +1502,7 @@ function model:draw_wire(point,scale,color) end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L266)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L289)
 function model:draw_transform(point,angle,scale,color) end
 
 ---TO-DO
@@ -1519,7 +1514,7 @@ function model:draw_transform(point,angle,scale,color) end
 ---@return number max_z # Maximum vector. (Z)
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L299)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L322)
 function model:get_box_3() end
 
 ---Get the vertex data of a specific mesh in the model.
@@ -1527,7 +1522,7 @@ function model:get_box_3() end
 ---@return table table # Vector3 table.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L324)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L347)
 function model:mesh_vertex(index) end
 
 ---Get the index data of a specific mesh in the model.
@@ -1535,7 +1530,7 @@ function model:mesh_vertex(index) end
 ---@return table table # Number table.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L342)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L365)
 function model:mesh_index(index) end
 
 ---Get the triangle count of a specific mesh in the model.
@@ -1543,13 +1538,13 @@ function model:mesh_index(index) end
 ---@return number count # Triangle count.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L371)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L394)
 function model:mesh_triangle_count(index) end
 
 ---An unique handle for a model animation in memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L387)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L410)
 ---@class model_animation
 model_animation = {}
 
@@ -1558,19 +1553,19 @@ model_animation = {}
 ---@return model_animation model_animation # ModelAnimation resource.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L405)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L428)
 function alicia.model_animation.new(path) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L451)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L474)
 function model_animation:get_bone_() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L469)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L492)
 function model_animation:get_bone_() end
 
 ---Update model with new model animation data.
@@ -1578,7 +1573,7 @@ function model_animation:get_bone_() end
 ---@param frame number # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L492)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/model.rs#L515)
 function model_animation:update(model,frame) end
 
 ---The drawing API.
@@ -1611,7 +1606,7 @@ function alicia.draw.begin(call,...) end
 ---@param ... any # Variadic data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L143)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L146)
 function alicia.draw.begin_blend(call,mode,...) end
 
 ---Initialize drawing (scissor mode) to the screen.
@@ -1620,13 +1615,13 @@ function alicia.draw.begin_blend(call,mode,...) end
 ---@param ... any # Variadic data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L169)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L175)
 function alicia.draw.begin_scissor(call,view,...) end
 
 ---The 3D drawing API.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L196)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L205)
 ---@class alicia.draw_3d
 alicia.draw_3d = {}
 
@@ -1636,7 +1631,7 @@ alicia.draw_3d = {}
 ---@param ... any # Variadic data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L238)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L247)
 function alicia.draw_3d.begin(call,camera,...) end
 
 ---Get a ray for a 2D screen-space point.
@@ -1651,7 +1646,7 @@ function alicia.draw_3d.begin(call,camera,...) end
 ---@return number direction_z # The 3D ray direction. (Z).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L274)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L286)
 function alicia.draw_3d.get_screen_to_world(camera,point,shape) end
 
 ---Get a 2D screen-space point for a 3D world-space point.
@@ -1662,7 +1657,7 @@ function alicia.draw_3d.get_screen_to_world(camera,point,shape) end
 ---@return number point_y # The 2D screen-space point (Y).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L317)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L329)
 function alicia.draw_3d.get_world_to_screen(camera,point,shape) end
 
 ---Draw a line.
@@ -1671,31 +1666,31 @@ function alicia.draw_3d.get_world_to_screen(camera,point,shape) end
 ---@param color color # The color of the line.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L348)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L360)
 function alicia.draw_3d.draw_line(point_a,point_b,color) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L368)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L380)
 function alicia.draw_3d.draw_point() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L384)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L396)
 function alicia.draw_3d.draw_circle() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L404)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L416)
 function alicia.draw_3d.draw_triangle() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L425)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L437)
 function alicia.draw_3d.draw_triangle_strip() end
 
 ---Draw a cube.
@@ -1704,7 +1699,7 @@ function alicia.draw_3d.draw_triangle_strip() end
 ---@param color color # The color of the cube.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L447)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L459)
 function alicia.draw_3d.draw_cube(point,shape,color) end
 
 ---Draw a cube (wire-frame).
@@ -1713,49 +1708,49 @@ function alicia.draw_3d.draw_cube(point,shape,color) end
 ---@param color color # The color of the cube.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L472)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L484)
 function alicia.draw_3d.draw_cube_wire(point,shape,color) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L492)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L504)
 function alicia.draw_3d.draw_sphere() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L511)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L523)
 function alicia.draw_3d.draw_sphere_wire() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L530)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L542)
 function alicia.draw_3d.draw_cylinder() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L564)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L576)
 function alicia.draw_3d.draw_cylinder_wire() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L598)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L610)
 function alicia.draw_3d.draw_capsule() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L632)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L644)
 function alicia.draw_3d.draw_capsule_wire() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L666)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L678)
 function alicia.draw_3d.draw_plane() end
 
 ---Draw a ray.
@@ -1763,7 +1758,7 @@ function alicia.draw_3d.draw_plane() end
 ---@param color color # The color of the ray.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L690)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L702)
 function alicia.draw_3d.draw_ray(ray,color) end
 
 ---Draw a grid.
@@ -1771,7 +1766,7 @@ function alicia.draw_3d.draw_ray(ray,color) end
 ---@param space number # The space shift of the grid.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L710)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L722)
 function alicia.draw_3d.draw_grid(slice,space) end
 
 ---Draw a 3D box.
@@ -1779,13 +1774,13 @@ function alicia.draw_3d.draw_grid(slice,space) end
 ---@param color color # The color of the ball.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L727)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L739)
 function alicia.draw_3d.draw_box_3(shape,color) end
 
 ---The 2D drawing API.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L744)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L756)
 ---@class alicia.draw_2d
 alicia.draw_2d = {}
 
@@ -1795,7 +1790,7 @@ alicia.draw_2d = {}
 ---@param ... any # Variadic data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L803)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L815)
 function alicia.draw_2d.begin(call,camera,...) end
 
 ---Get a screen-space point for a 2D world-space point.
@@ -1805,7 +1800,7 @@ function alicia.draw_2d.begin(call,camera,...) end
 ---@return number point_y # The 2D screen-space point (Y).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L834)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L849)
 function alicia.draw_2d.get_world_to_screen(camera,point) end
 
 ---Get a world-space point for a 2D screen-space point.
@@ -1815,7 +1810,7 @@ function alicia.draw_2d.get_world_to_screen(camera,point) end
 ---@return number point_y # The 2D world-space point (Y).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L863)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L878)
 function alicia.draw_2d.get_screen_to_world(camera,point) end
 
 ---Draw pixel.
@@ -1823,7 +1818,7 @@ function alicia.draw_2d.get_screen_to_world(camera,point) end
 ---@param color color # The color of the pixel.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L888)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L903)
 function alicia.draw_2d.draw_pixel(point,color) end
 
 ---Draw a line.
@@ -1833,19 +1828,19 @@ function alicia.draw_2d.draw_pixel(point,color) end
 ---@param color color # The color of the line.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L911)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L926)
 function alicia.draw_2d.draw_line(point_a,point_b,thick,color) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L932)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L947)
 function alicia.draw_2d.draw_line_strip() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L951)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L966)
 function alicia.draw_2d.draw_line_bezier() end
 
 ---Draw a circle.
@@ -1854,13 +1849,13 @@ function alicia.draw_2d.draw_line_bezier() end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L977)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L992)
 function alicia.draw_2d.draw_circle(point,radius,color) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L997)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1012)
 function alicia.draw_2d.draw_circle_line() end
 
 ---Draw the sector of a circle.
@@ -1872,43 +1867,43 @@ function alicia.draw_2d.draw_circle_line() end
 ---@param color color # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1025)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1040)
 function alicia.draw_2d.draw_circle_sector(point,radius,begin_angle,close_angle,segment_count,color) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1059)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1074)
 function alicia.draw_2d.draw_circle_sector_line() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1079)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1094)
 function alicia.draw_2d.draw_circle_gradient() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1106)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1121)
 function alicia.draw_2d.draw_ellipse() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1133)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1148)
 function alicia.draw_2d.draw_ellipse_line() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1160)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1175)
 function alicia.draw_2d.draw_ring() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1196)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1211)
 function alicia.draw_2d.draw_ring_line() end
 
 ---Draw 2D box.
@@ -1918,7 +1913,7 @@ function alicia.draw_2d.draw_ring_line() end
 ---@param color color # The color of the box.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1238)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1253)
 function alicia.draw_2d.draw_box_2(shape,point,angle,color) end
 
 ---Draw 2D box with a 4-point gradient.
@@ -1929,7 +1924,7 @@ function alicia.draw_2d.draw_box_2(shape,point,angle,color) end
 ---@param color_d color # The color D (B.R.) of the box.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1266)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1281)
 function alicia.draw_2d.draw_box_2_gradient(shape,color_a,color_b,color_c,color_d) end
 
 ---Draw 2D box (out-line).
@@ -1938,7 +1933,7 @@ function alicia.draw_2d.draw_box_2_gradient(shape,color_a,color_b,color_c,color_
 ---@param color color # The color of the box.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1306)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1321)
 function alicia.draw_2d.draw_box_2_line(shape,thick,color) end
 
 ---Draw 2D box (round).
@@ -1948,7 +1943,7 @@ function alicia.draw_2d.draw_box_2_line(shape,thick,color) end
 ---@param color color # The color of the box.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1332)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1347)
 function alicia.draw_2d.draw_box_2_round(shape,round,count,color) end
 
 ---Draw 2D box (out-line, round).
@@ -1959,7 +1954,7 @@ function alicia.draw_2d.draw_box_2_round(shape,round,count,color) end
 ---@param color color # The color of the box.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1359)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1374)
 function alicia.draw_2d.draw_box_2_line_round(shape,round,count,thick,color) end
 
 ---Draw 2D triangle.
@@ -1969,7 +1964,7 @@ function alicia.draw_2d.draw_box_2_line_round(shape,round,count,thick,color) end
 ---@param color color # The color of the triangle.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1385)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1400)
 function alicia.draw_2d.draw_triangle(point_a,point_b,point_c,color) end
 
 ---Draw 2D triangle (out-line).
@@ -1979,7 +1974,7 @@ function alicia.draw_2d.draw_triangle(point_a,point_b,point_c,color) end
 ---@param color color # The color of the triangle.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1413)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/draw.rs#L1428)
 function alicia.draw_2d.draw_triangle_line(point_a,point_b,point_c,color) end
 
 ---The data API.
@@ -2346,9 +2341,28 @@ function alicia.discord.new(ID,name,command) end
 ---The file API.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L64)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L66)
 ---@class alicia.file
 alicia.file = {}
+
+---TO-DO
+---
+--- ---
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L125)
+---@class file_watcher
+file_watcher = {}
+
+---TO-DO
+---
+--- ---
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L135)
+function alicia.file_watcher.new() end
+
+---TO-DO
+---
+--- ---
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L177)
+function file_watcher:poll() end
 
 ---Get the data of a file.
 ---```lua
@@ -2366,7 +2380,7 @@ alicia.file = {}
 ---@return string data # File data.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L121)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L210)
 function alicia.file.get_file(path,binary) end
 
 ---Set the data of a file.
@@ -2384,7 +2398,7 @@ function alicia.file.get_file(path,binary) end
 ---@param data string | data # Data to copy.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L149)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L249)
 function alicia.file.set_file(path,data) end
 
 ---Move a file.
@@ -2392,7 +2406,7 @@ function alicia.file.set_file(path,data) end
 ---@param target string # The target path.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L179)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L279)
 function alicia.file.move_file(source,target) end
 
 ---Copy a file.
@@ -2400,56 +2414,56 @@ function alicia.file.move_file(source,target) end
 ---@param target string # The target path.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L199)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L299)
 function alicia.file.copy_file(source,target) end
 
 ---Remove a file.
 ---@param path string # The path to the file to remove.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L218)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L318)
 function alicia.file.remove_file(path) end
 
 ---Remove a folder.
 ---@param path string # The path to the folder to remove.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L236)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L336)
 function alicia.file.remove_path(path) end
 
 ---Set the state of the path sand-box.
 ---@param state boolean # The state of the path sand-box.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L254)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L354)
 function alicia.file.set_path_escape(state) end
 
 ---Set the file save call-back.
 ---@param call function # The call-back. Must accept a file-name and a data parameter, and return a boolean (true on success, false on failure).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L390)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L490)
 function alicia.file.set_call_save_file(call) end
 
 ---Set the file load call-back.
 ---@param call function # The call-back. Must accept a file-name, and return a data buffer. Return anything else to indicate failure.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L410)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L510)
 function alicia.file.set_call_load_file(call) end
 
 ---Set the file text save call-back.
 ---@param call function # The call-back. Must accept a file-name and a string parameter, and return a boolean (true on success, false on failure).
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L430)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L530)
 function alicia.file.set_call_save_text(call) end
 
 ---Set the file load call-back.
 ---@param call function # The call-back. Must accept a file-name, and return a string. Return anything else to indicate failure.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L450)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L550)
 function alicia.file.set_call_load_text(call) end
 
 ---Check if a file does exist.
@@ -2464,7 +2478,7 @@ function alicia.file.set_call_load_text(call) end
 ---@return boolean exist # True if file does exist, false otherwise.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L474)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L574)
 function alicia.file.get_file_exist(path) end
 
 ---Check if a path does exist.
@@ -2479,7 +2493,7 @@ function alicia.file.get_file_exist(path) end
 ---@return boolean exist # True if path does exist, false otherwise.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L494)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L594)
 function alicia.file.get_path_exist(path) end
 
 ---Check if a file's extension is the same as a given one.
@@ -2488,7 +2502,7 @@ function alicia.file.get_path_exist(path) end
 ---@return boolean check # True if file extension is the same as the given one, false otherwise.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L514)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L614)
 function alicia.file.get_file_extension_check(path,extension) end
 
 ---Get the size of a file.
@@ -2496,7 +2510,7 @@ function alicia.file.get_file_extension_check(path,extension) end
 ---@return number size # File size.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L535)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L635)
 function alicia.file.get_file_size(path) end
 
 ---Get the extension of a file.
@@ -2504,7 +2518,7 @@ function alicia.file.get_file_size(path) end
 ---@return string extension # File extension.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L554)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L654)
 function alicia.file.get_file_extension(path) end
 
 ---Get the name of a file.
@@ -2513,57 +2527,57 @@ function alicia.file.get_file_extension(path) end
 ---@return string name # File name.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L577)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L677)
 function alicia.file.get_file_name(path,extension) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L598)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L698)
 function alicia.file.get_absolute_path() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L615)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L715)
 function alicia.file.get_previous_path() end
 
 ---Get the current work path.
 ---@return string path # Work path.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L635)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L735)
 function alicia.file.get_work_directory() end
 
 ---Get the current application path.
 ---@return string path # Application path.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L652)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L752)
 function alicia.file.get_application_directory() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L666)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L766)
 function alicia.file.create_path() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L689)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L789)
 function alicia.file.change_path() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L712)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L812)
 function alicia.file.get_path_file() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L727)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L827)
 function alicia.file.get_file_name_valid() end
 
 ---Scan a path.
@@ -2574,25 +2588,25 @@ function alicia.file.get_file_name_valid() end
 ---@return table list # File list.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L751)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L851)
 function alicia.file.scan_path(path,filter,recursive,absolute) end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L802)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L902)
 function alicia.file.get_file_drop() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L813)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L913)
 function alicia.file.get_file_drop_list() end
 
 ---TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L840)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/file.rs#L940)
 function alicia.file.get_file_modification() end
 
 ---The general API.
@@ -2606,69 +2620,69 @@ alicia.general = {}
 ---@return string input # The standard input.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L111)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L161)
 function alicia.general.standard_input() end
 
 ---Load the standard Lua library.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L125)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L175)
 function alicia.general.load_base() end
 
 ---Set the log level.
 ---@param level number # The log level.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L151)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L201)
 function alicia.general.set_log_level(level) end
 
 ---Open an URL link.
 ---@param link string # The URL link.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L168)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L218)
 function alicia.general.open_link(link) end
 
 ---Get the current time. Will count up since the initialization of the window.
 ---@return number time # Current time.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L184)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L234)
 function alicia.general.get_time() end
 
 ---Get the time in UNIX time-stamp format.
 ---@param add number? # OPTIONAL: Add (or subtract) by this amount.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L197)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L247)
 function alicia.general.get_time_unix(add) end
 
 ---Get the current frame time.
 ---@return number frame_time # Current frame time.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L214)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L264)
 function alicia.general.get_frame_time() end
 
 ---Get the current frame rate.
 ---@return number frame_rate # Current frame rate.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L227)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L277)
 function alicia.general.get_frame_rate() end
 
 ---Set the current frame rate.
 ---@param frame_rate number # Current frame rate.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L240)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L290)
 function alicia.general.set_frame_rate(frame_rate) end
 
 ---Get the argument list.
 ---@return table list # The list of every argument.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L257)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L307)
 function alicia.general.get_argument() end
 
 ---Get the system info.
@@ -2677,21 +2691,21 @@ function alicia.general.get_argument() end
 --- ---
 ---*Available with compile feature: `system_info`.*
 ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L274)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L324)
 function alicia.general.get_system() end
 
 ---Get the currently in-use memory by the Lua VM.
 ---@return number memory # The currently in-use memory.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L292)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L342)
 function alicia.general.get_memory() end
 
 ---Get the current info manifest.
 ---@return table info # The info manifest.
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L307)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/general.rs#L357)
 function alicia.general.get_info() end
 
 ---The collision API.
@@ -2852,7 +2866,7 @@ function shader:begin(call) end
 ---@return number location # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L214)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L216)
 function shader:get_location_name(name) end
 
 ---TO-DO
@@ -2860,7 +2874,7 @@ function shader:get_location_name(name) end
 ---@return number location # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L231)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L233)
 function shader:get_location_attribute_name(name) end
 
 ---TO-DO
@@ -2868,7 +2882,7 @@ function shader:get_location_attribute_name(name) end
 ---@return number location # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L248)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L250)
 function shader:get_location(location) end
 
 ---TO-DO
@@ -2876,7 +2890,7 @@ function shader:get_location(location) end
 ---@param value number # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L263)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L265)
 function shader:set_location(location,value) end
 
 ---TO-DO
@@ -2885,7 +2899,7 @@ function shader:set_location(location,value) end
 ---@param value any # TO-DO
 ---
 --- ---
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L283)
+---[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/source/rust/base/shader.rs#L285)
 function shader:set_shader_value(location,kind,value) end
 
 ---The image API.

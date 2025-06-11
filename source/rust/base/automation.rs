@@ -48,13 +48,14 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+use crate::base::helper::*;
 use crate::script::*;
 use crate::status::*;
 
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 
 //================================================================
 
@@ -77,7 +78,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 /* class
 { "version": "1.0.0", "name": "automation_event", "info": "An unique handle to an automation event list." }
 */
-struct AutomationEvent(ffi::AutomationEventList);
+struct AutomationEvent(AutomationEventList);
 
 unsafe impl Send for AutomationEvent {}
 

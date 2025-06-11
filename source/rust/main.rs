@@ -75,9 +75,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // missing status: no info.json file is present.
             Status::Missing => {
                 if let Some((ref mut handle, ref thread, ref _audio)) = context {
-                    let mut window = window::Window::new(handle, thread);
+                    //let mut window = window::Window::new(handle, thread);
 
-                    if let Some(state) = Status::missing(handle, thread, &mut window).await {
+                    if let Some(state) = Status::missing(handle, thread).await {
                         status = state;
                     }   
                 } else {
@@ -93,11 +93,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // failure status: an error has been thrown from Lua, show crash-handler.
             Status::Failure(ref mut script, ref error) => {
                 if let Some((ref mut handle, ref thread, ref _audio)) = context {
-                    let mut window = window::Window::new(handle, thread);
+                    //let mut window = window::Window::new(handle, thread);
                     
-                    if let Some(state) = Status::failure(handle, thread, &mut window, script, error).await {
-                        status = state;
-                    }
+                    //if let Some(state) = Status::failure(handle, thread, script, error).await {
+                    //    status = state;
+                    //}
+
+                    panic!("{error:?}")
                 } else {
                     panic!("{error:?}")
                 }

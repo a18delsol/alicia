@@ -60,7 +60,7 @@ use rapier3d::{
     parry,
     prelude::*,
 };
-use raylib::prelude::*;
+//use raylib::prelude::*;
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
@@ -149,13 +149,14 @@ impl mlua::UserData for Rapier {
             "name": "rapier:cast_ray",
             "info": "Cast a ray.",
             "member": [
-                { "name": "ray",           "info": "Ray to cast.", "kind": "ray"     },
-                { "name": "length",        "info": "Ray length.",  "kind": "number"  },
-                { "name": "solid",         "info": "TO-DO",        "kind": "boolean" },
-                { "name": "exclude_rigid", "info": "TO-DO",        "kind": "table"   }
+                { "name": "ray",              "info": "Ray to cast.", "kind": "ray"     },
+                { "name": "length",           "info": "Ray length.",  "kind": "number"  },
+                { "name": "solid",            "info": "TO-DO",        "kind": "boolean" },
+                { "name": "exclude_rigid",    "info": "TO-DO",        "kind": "table"   },
+                { "name": "exclude_collider", "info": "TO-DO",        "kind": "table"   }
             ],
             "result": [
-                { "name": "rigid_body", "info": "Rigid body handle.", "kind": "table" }
+                { "name": "collider_handle", "info": "Collider handle.", "kind": "table" }
             ]
         }
         */
@@ -254,13 +255,14 @@ impl mlua::UserData for Rapier {
                 ) {
                     return Ok((
                         lua.to_value(&handle)?,
+                        normal.time_of_impact,
                         normal.normal.x,
                         normal.normal.y,
                         normal.normal.z,
                     ));
                 }
 
-                Ok((mlua::Nil, 0.0, 0.0, 0.0))
+                Ok((mlua::Nil, 0.0, 0.0, 0.0, 0.0))
             },
         );
 
@@ -386,64 +388,71 @@ impl mlua::UserData for Rapier {
             ]
         }
         */
-        method.add_method_mut(
-            "get_collider_shape_cuboid",
-            |lua, this, collider: LuaValue| {
-                let collider: ColliderHandle = lua.from_value(collider)?;
+        method.add_method_mut("get_collider_shape", |lua, this, collider: LuaValue| {
+            let collider: ColliderHandle = lua.from_value(collider)?;
 
-                if let Some(collider) = this.collider_set.get(collider) {
-                    if let Some(shape) = collider.shape().as_cuboid() {
-                        return Ok((
-                            shape.half_extents.x,
-                            shape.half_extents.y,
-                            shape.half_extents.z,
-                        ));
-                    } else {
-                        return Err(mlua::Error::runtime(
-                            "rapier:get_collider_shape_cuboid(): Collider is not a cuboid.",
-                        ));
-                    }
+            if let Some(collider) = this.collider_set.get(collider) {
+                if let Some(shape) = collider.shape().as_ball() {
+                    return Ok(lua.to_value(&shape.radius));
                 }
 
-                Err(mlua::Error::runtime(
-                    "rapier:get_collider_shape_cuboid(): Invalid collider handle.",
-                ))
-            },
-        );
+                if let Some(shape) = collider.shape().as_cuboid() {
+                    return Ok(lua.to_value(&(
+                        shape.half_extents.x,
+                        shape.half_extents.y,
+                        shape.half_extents.z,
+                    )));
+                }
+            }
+
+            Err(mlua::Error::runtime(
+                "rapier:get_collider_shape(): Invalid collider handle.",
+            ))
+        });
 
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:set_collider_shape_cuboid",
-            "info": "Set the shape of a collider (cuboid).",
+            "name": "rapier:set_collider_shape",
+            "info": "Set the shape of a collider.",
             "member": [
-                { "name": "collider",   "info": "Collider handle.",      "kind": "table"    },
-                { "name": "half_shape", "info": "Half-shape of cuboid.", "kind": "vector_3" }
+                { "name": "collider", "info": "Collider handle.", "kind": "table" }
             ]
         }
         */
         method.add_method_mut(
-            "set_collider_shape_cuboid",
-            |lua, this, (collider, half_shape): (LuaValue, LuaValue)| {
+            "set_collider_shape",
+            |lua, this, (collider, data): (LuaValue, mlua::Variadic<LuaValue>)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
-                let half_shape: Vector3 = lua.from_value(half_shape)?;
 
                 if let Some(collider) = this.collider_set.get_mut(collider) {
-                    if let Some(shape) = collider.shape_mut().as_cuboid_mut() {
-                        shape.half_extents.x = half_shape.x;
-                        shape.half_extents.y = half_shape.y;
-                        shape.half_extents.z = half_shape.z;
+                    if let Some(shape) = collider.shape_mut().as_ball_mut() {
+                        if let Some(radius) = data.get(0) {
+                            let radius: f32 = lua.from_value(radius.clone())?;
 
-                        return Ok(());
-                    } else {
-                        return Err(mlua::Error::runtime(
-                            "rapier:set_collider_shape_cuboid(): Collider is not a cuboid.",
-                        ));
+                            shape.radius = radius;
+                        }
                     }
+
+                    if let Some(shape) = collider.shape_mut().as_cuboid_mut() {
+                        if let Some(half_shape) = data.get(0) {
+                            let half_shape: Vector3 = lua.from_value(half_shape.clone())?;
+
+                            shape.half_extents.x = half_shape.x;
+                            shape.half_extents.y = half_shape.y;
+                            shape.half_extents.z = half_shape.z;
+                        } else {
+                            return Err(mlua::Error::runtime(
+                                "rapier:set_collider_shape(): Missing half-shape argument (vector_3).",
+                            ));
+                        }
+                    }
+
+                    return Ok(());
                 }
 
                 Err(mlua::Error::runtime(
-                    "rapier:set_collider_shape_cuboid(): Invalid collider handle.",
+                    "rapier:set_collider_shape(): Invalid collider handle.",
                 ))
             },
         );
@@ -522,7 +531,7 @@ impl mlua::UserData for Rapier {
         }
         */
         method.add_method_mut(
-            "set_collider_translation",
+            "set_collider_position",
             |lua, this, (collider, position): (LuaValue, LuaValue)| {
                 let collider: ColliderHandle = lua.from_value(collider)?;
                 let position: Vector3 = lua.from_value(position)?;
@@ -799,27 +808,23 @@ impl mlua::UserData for Rapier {
                 let translation: Vector3 = lua.from_value(translation)?;
 
                 let movement = character.move_shape(
-                    step,                 // The timestep length (can be set to SimulationSettings::dt).
-                    &this.rigid_body_set, // The RigidBodySet.
-                    &this.collider_set,   // The ColliderSet.
-                    &this.query_pipeline, // The QueryPipeline.
-                    collider_r.shape(),      // The character’s shape.
-                    collider_r.position(),        // The character’s initial position.
+                    step,
+                    &this.rigid_body_set,
+                    &this.collider_set,
+                    &this.query_pipeline,
+                    collider_r.shape(),
+                    collider_r.position(),
                     vector![translation.x * step, translation.y * step, translation.z * step],
                     QueryFilter::default()
-                        // Make sure the character we are trying to move isn’t considered an obstacle.
                         .exclude_collider(collider_h)
                         .exclude_sensors(),
-                    |_| {}, // We don’t care about events in this example.
+                    |_| {}
                 );
 
-                let collider_r = this.collider_set.get_mut(collider_h).unwrap();
-                collider_r.set_translation(collider_r.translation() + movement.translation);
-
                 Ok((
-                    collider_r.translation().x,
-                    collider_r.translation().y,
-                    collider_r.translation().z,
+                    movement.translation.x,
+                    movement.translation.y,
+                    movement.translation.z,
                     movement.grounded,
                     movement.is_sliding_down_slope
                 ))
@@ -1024,8 +1029,8 @@ impl mlua::UserData for Rapier {
         /* entry
         {
             "version": "1.0.0",
-            "name": "rapier:collider_builder_cuboid",
-            "info": "Create a collider builder (cuboid).",
+            "name": "rapier:collider_builder",
+            "info": "Create a collider builder.",
             "member": [
                 { "name": "half_shape", "info": "Half-shape of cuboid.", "kind": "vector_3" }
             ],
@@ -1035,94 +1040,81 @@ impl mlua::UserData for Rapier {
         }
         */
         method.add_method_mut(
-            "collider_builder_cuboid",
-            |lua, this, (half_shape, rigid_body): (LuaValue, Option<LuaValue>)| {
-                let half_shape: Vector3 = lua.from_value(half_shape)?;
+            "collider_builder",
+            |lua, this, (rigid_body, kind, data): (Option<LuaValue>, i32, mlua::Variadic<LuaValue>)| {
+                match kind {
+                    0 => {
+                        if let Some(half_shape) = data.get(0) {
+                            let half_shape: Vector3 = lua.from_value(half_shape.clone())?;
 
-                this.insert_collider(
-                    lua,
-                    ColliderBuilder::cuboid(half_shape.x, half_shape.y, half_shape.z),
-                    rigid_body,
-                )
-            },
-        );
+                            this.insert_collider(
+                                lua,
+                                ColliderBuilder::cuboid(half_shape.x, half_shape.y, half_shape.z),
+                                rigid_body,
+                            )
+                        } else {
+                            Err(mlua::Error::runtime(
+                                "rapier:collider_builder(): Missing half-shape (vector_3) argument.",
+                            ))
+                        }
+                    },
+                    1 => {
+                        if let Some(point_table) = data.get(0) && let Some(index_table) = data.get(1) {
+                            let mut p_table: Vec<Point<f32>> = Vec::new();
+                            let mut i_table: Vec<[u32; 3]> = Vec::new();
+                            let point_table: Vec<Vector3> = lua.from_value(point_table.clone())?;
+                            let index_table: Vec<u32> = lua.from_value(index_table.clone())?;
 
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "rapier:collider_builder_tri_mesh",
-            "info": "Create a collider builder (tri-mesh).",
-            "member": [
-                { "name": "point_table", "info": "The point array table.", "kind": "table" },
-                { "name": "index_table", "info": "The index array table.", "kind": "table" }
-            ],
-            "result": [
-                { "name": "collider_builer", "info": "Collider builder.", "kind": "table" }
-            ]
-        }
-        */
-        method.add_method_mut(
-            "collider_builder_tri_mesh",
-            |lua, this, (point_table, index_table, rigid_body): (LuaValue, LuaValue, Option<LuaValue>)| {
-                let mut p_table: Vec<Point<f32>> = Vec::new();
-                let mut i_table: Vec<[u32; 3]> = Vec::new();
-                let point_table: Vec<Vector3> = lua.from_value(point_table)?;
-                let index_table: Vec<u32> = lua.from_value(index_table)?;
+                            for x in point_table {
+                                p_table.push(point![x.x, x.y, x.z]);
+                            }
 
-                for x in point_table {
-                    p_table.push(point![x.x, x.y, x.z]);
-                }
+                            let mut iterator = index_table.iter();
 
-                let mut iterator = index_table.iter();
+                            while let Some(a) = iterator.next() {
+                                if let Some(b) = iterator.next() {
+                                    if let Some(c) = iterator.next() {
+                                        i_table.push([*a, *b, *c]);
+                                    }
+                                }
+                            }
 
-                while let Some(a) = iterator.next() {
-                    if let Some(b) = iterator.next() {
-                        if let Some(c) = iterator.next() {
-                            i_table.push([*a, *b, *c]);
+                            // TO-DO this should really be a convex_mesh call, but for some reason, it doesn't work, no matter what input is sent?
+                            this.insert_collider(
+                                lua,
+                                ColliderBuilder::trimesh_with_flags(
+                                    p_table,
+                                    i_table,
+                                    TriMeshFlags::all(),
+                                ),
+                                rigid_body,
+                            )
+                        } else {
+                            Err(mlua::Error::runtime(
+                                "rapier:collider_builder(): Missing point table ({ vector_3 }) or index table ({ vector_3 }) argument.",
+                            ))
                         }
                     }
-                }
+                    _ => {
+                        if let Some(point_table) = data.get(0) {
+                            let mut p_table: Vec<Point<f32>> = Vec::new();
+                            let point_table: Vec<Vector3> = lua.from_value(point_table.clone())?;
 
-                // TO-DO this should really be a convex_mesh call, but for some reason, it doesn't work, no matter what input is sent?
-                this.insert_collider(
-                    lua,
-                    ColliderBuilder::trimesh_with_flags(
-                        p_table,
-                        i_table,
-                        TriMeshFlags::all(),
-                    ),
-                    rigid_body,
-                )
-            },
-        );
+                            for x in point_table {
+                                p_table.push(point![x.x, x.y, x.z]);
+                            }
 
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "rapier:collider_builder_convex_hull",
-            "info": "Create a collider builder (convex hull).",
-            "member": [
-                { "name": "vector_table", "info": "A vector_3 vertex array table.", "kind": "table" }
-            ],
-            "result": [
-                { "name": "collider_builer", "info": "Collider builder.", "kind": "table" }
-            ]
-        }
-        */
-        method.add_method_mut(
-            "collider_builder_convex_hull",
-            |lua, this, (vector_table, rigid_body): (LuaValue, Option<LuaValue>)| {
-                let mut point_table: Vec<Point<f32>> = Vec::new();
-                let vector_table: Vec<Vector3> = lua.from_value(vector_table)?;
-
-                for x in vector_table {
-                    point_table.push(point![x.x, x.y, x.z]);
-                }
-
-                if let Some(collider) = ColliderBuilder::convex_hull(&point_table) {
-                    this.insert_collider(lua, collider, rigid_body)
-                } else {
-                    Ok(mlua::Nil)
+                            if let Some(collider) = ColliderBuilder::convex_hull(&p_table) {
+                                this.insert_collider(lua, collider, rigid_body)
+                            } else {
+                                Ok(mlua::Nil)
+                            }
+                        } else {
+                            Err(mlua::Error::runtime(
+                                "rapier:collider_builder(): Missing point table ({ vector_3 }) argument.",
+                            ))
+                        }
+                    }
                 }
             },
         );

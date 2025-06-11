@@ -54,7 +54,7 @@ use crate::status::*;
 //================================================================
 
 use mlua::prelude::*;
-use raylib::prelude::*;
+//use raylib::prelude::*;
 use std::ffi::CStr;
 
 //================================================================
@@ -122,11 +122,13 @@ impl Model {
 
                 for material in data.materials_mut() {
                     for map in material.maps_mut() {
-                        ffi::GenTextureMipmaps(&mut map.texture);
-                        ffi::SetTextureFilter(
-                            map.texture,
-                            ffi::TextureFilter::TEXTURE_FILTER_BILINEAR as i32,
-                        );
+                        if map.texture.id > 0 {
+                            ffi::GenTextureMipmaps(&mut map.texture);
+                            ffi::SetTextureFilter(
+                                map.texture,
+                                ffi::TextureFilter::TEXTURE_FILTER_BILINEAR as i32,
+                            );
+                        }
                     }
                 }
 
@@ -234,6 +236,15 @@ impl mlua::UserData for Model {
                 let point: Vector3 = lua.from_value(point)?;
                 let color: Color = lua.from_value(color)?;
 
+                //super::r3d::R3D_DrawModel(
+                //    std::mem::transmute(*this.0),
+                //    super::r3d::Vector3 {
+                //        x: point.x,
+                //        y: point.y,
+                //        z: point.z,
+                //    },
+                //    1.0,
+                //);
                 ffi::DrawModel(*this.0, point.into(), scale, color.into());
                 Ok(())
             },
