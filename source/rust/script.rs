@@ -94,10 +94,9 @@ pub struct Script {
 impl Script {
     const FILE_MAIN: &'static str = include_str!("../lua/main.lua");
     #[rustfmt::skip]
-    pub const FILE_BASE: [BaseFile; 10] = [
+    pub const FILE_BASE: [BaseFile; 9] = [
         BaseFile::new("base/constant.lua",    include_str!(concat!(env!("OUT_DIR"), "/constant.lua"))),
         BaseFile::new("base/extension.lua",   include_str!(concat!(env!("OUT_DIR"), "/extension.lua"))),
-        BaseFile::new("base/allocator.lua",   include_str!(concat!(env!("OUT_DIR"), "/allocator.lua"))),
         BaseFile::new("base/primitive.lua",   include_str!(concat!(env!("OUT_DIR"), "/primitive.lua"))),
         BaseFile::new("base/scheduler.lua",   include_str!(concat!(env!("OUT_DIR"), "/scheduler.lua"))),
         BaseFile::new("base/action.lua",      include_str!(concat!(env!("OUT_DIR"), "/action.lua"))),
