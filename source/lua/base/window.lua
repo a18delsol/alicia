@@ -1,5 +1,5 @@
 --[[
--- Copyright (c) 2025 a18delsol
+-- Copyright (c) 2025 luxreduxdelux
 --
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are met:
@@ -48,7 +48,16 @@
 -- OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --]]
 
-require "bit"
+require("bit")
+
+---@enum gizmo_flag
+GIZMO_FLAG = {
+    IGNORE_BOARD   = 0x00000001,
+    IGNORE_MOUSE   = 0x00000010,
+    CLICK_ON_PRESS = 0x00000100,
+}
+
+--[[----------------------------------------------------------------]]
 
 local WINDOW_FONT_SCALE         = 24.0
 local WINDOW_FONT_SPACE         = 2.0
@@ -105,83 +114,6 @@ local WINDOW_ACTION_ENTRY       = action:new(
     }
 )
 local WINDOW_SHIFT              = vector_2:new(6.0, 2.0)
-
----@class gizmo
----@field hover       number
----@field sound_hover boolean
----@field sound_focus boolean
-gizmo                           = {
-    __meta = {}
-}
-
----Create a new gizmo.
----@return gizmo value # The gizmo.
-function gizmo:new()
-    local i = {}
-    setmetatable(i, self.__meta)
-    getmetatable(i).__index = self
-
-    --[[]]
-
-    i.__type       = "gizmo"
-    i.hover        = 0.0
-    i.focus        = 0.0
-    -- TO-DO consider only initializing this for the appropiate gizmo and not before?
-    i.scroll_value = 0.0
-    i.scroll_frame = 0.0
-    i.entry_cursor = 0.0
-
-    return i
-end
-
----Calculate the point of a gizmo with animation.
----@param lobby lobby # The lobby.
----@param shape box_2 # The shape.
----@return box_2 shape # The shape, with animation.
-function gizmo:move(window, shape)
-    -- move shape horizontally.
-    --shape.point.x = shape.point.x + (ease.in_out_quad(self.hover) * 8.0) - 16.0 + math.out_quad(math.min(1.0, window.time * 4.0)) * 16.0
-
-    shape.point.y = shape.point.y - (ease.in_out_quad(self.hover) * 4.0) + (ease.in_out_quad(self.focus) * 4.0)
-
-    return shape
-end
-
----Calculate the color of a gizmo with animation.
----@param lobby lobby # The lobby.
----@param color color # The color.
----@return color color # The color, with animation.
-function gizmo:fade(window, color)
-    dark = 1.0
-
-    if window.pick and not (window.count == window.pick + 1) then
-        dark = 0.5
-    end
-
-    -- fade in/out from hover.
-    color = color * (ease.in_out_quad(self.hover) * 0.25 + 0.75) * dark
-
-    -- fade in/out from time.
-    --color.a = math.floor(math.out_quad(math.min(1.0, window.time * 4.0)) * 255.0)
-
-    return color
-end
-
----@enum gizmo_flag
-GIZMO_FLAG = {
-    IGNORE_BOARD   = 0x00000001,
-    IGNORE_MOUSE   = 0x00000010,
-    CLICK_ON_PRESS = 0x00000100,
-}
-
----@class window
----@field index  number
----@field count  number
----@field focus  number | nil
----@field device input_device
-window     = {
-    __meta = {}
-}
 
 local function window_font(self, scale)
     if self.font[scale] then
@@ -351,6 +283,24 @@ local function window_state(self, shape, flag, input)
     return hover, index, focus, click, which
 end
 
+local function window_check_draw(self, shape)
+    if self.shape then
+        return alicia.collision.get_box_2_box_2(self.shape, shape)
+    end
+
+    return true
+end
+
+--[[----------------------------------------------------------------]]
+
+---@class window
+---@field index  number
+---@field count  number
+---@field focus  number | nil
+---@field device input_device
+window = {
+    __meta = {}
+}
 
 ---Create a new window.
 ---@return window value # The window.
@@ -433,73 +383,6 @@ function window:draw(call, lock, mouse, ...)
     -- a mouse button was set off...
     if mouse_check then
         self:set_device(INPUT_DEVICE.MOUSE)
-    end
-end
-
-function window:set_device(device)
-    if device == INPUT_DEVICE.BOARD or device == INPUT_DEVICE.PAD then
-        if not alicia.input.mouse.get_hidden() then
-            -- if mouse wasn't hidden, disable.
-            alicia.input.mouse.set_active(false)
-        end
-    else
-        if alicia.input.mouse.get_hidden() then
-            -- if mouse was hidden, enable.
-            alicia.input.mouse.set_active(true)
-        end
-
-        -- reset index.
-        self.index = 0.0
-    end
-
-    -- set the active device.
-    self.device = device
-end
-
-local function window_check_draw(self, shape)
-    if self.shape then
-        return alicia.collision.get_box_2_box_2(self.shape, shape)
-    end
-
-    return true
-end
-
--- TO-DO documentation
-function window:border(shape, round, count, b_color)
-    -- scroll.
-    shape.point.y = shape.point.y + self.point
-
-    round         = round or WINDOW_CARD_ROUND_SHAPE
-    count         = count or WINDOW_CARD_ROUND_COUNT
-    b_color       = b_color or WINDOW_COLOR_PRIMARY_MAIN
-
-    if window_check_draw(self, shape) then
-        alicia.draw_2d.draw_box_2_round(shape,
-            round,
-            count,
-            b_color)
-    end
-end
-
----Draw a text gizmo.
----@param point  box_2  # The point of the gizmo.
----@param label  string # The label of the gizmo.
----@param font   font   # The font of the gizmo.
--- TO-DO origin, angle
----@param scale  number # The text scale of the gizmo.
----@param space  number # The text space of the gizmo.
----@param color  number # The text color of the gizmo.
----@return boolean click # True on click, false otherwise.
-function window:text(point, label, font, origin, angle, scale, space, color)
-    -- scroll.
-    point.y = point.y + self.point
-
-    if window_check_draw(self, box_2:new(point, vector_2:new(1.0, scale))) then
-        if font then
-            font:draw(label, point, origin, angle, scale, space, color)
-        else
-            window_font(self, scale):draw(label, point, origin, angle, scale, space, color)
-        end
     end
 end
 
@@ -820,12 +703,12 @@ function window:action(shape, label, value, clamp, flag)
 
             -- if button came from the board, attach board action.
             if board_queue > 0.0 then
-                value:attach(action_button:new(INPUT_DEVICE.BOARD, board_queue))
+                value:button_attach(action_button:new(INPUT_DEVICE.BOARD, board_queue))
             end
 
             -- if button came from the mouse, attach mouse action.
             if mouse_queue then
-                value:attach(action_button:new(INPUT_DEVICE.MOUSE, mouse_queue))
+                value:button_attach(action_button:new(INPUT_DEVICE.MOUSE, mouse_queue))
             end
 
             -- remove us from the focus gizmo, lock navigation, and remove us from the pick gizmo.
@@ -1082,4 +965,126 @@ function window:scroll(shape, call)
     if alicia.collision.get_point_box_2(self.mouse, shape) then
         gizmo.scroll_value = math.clamp(0.0, 1.0, gizmo.scroll_value - delta.y * 0.05)
     end
+end
+
+-- TO-DO documentation
+function window:border(shape, round, count, b_color)
+    -- scroll.
+    shape.point.y = shape.point.y + self.point
+
+    round         = round or WINDOW_CARD_ROUND_SHAPE
+    count         = count or WINDOW_CARD_ROUND_COUNT
+    b_color       = b_color or WINDOW_COLOR_PRIMARY_MAIN
+
+    if window_check_draw(self, shape) then
+        alicia.draw_2d.draw_box_2_round(shape,
+            round,
+            count,
+            b_color)
+    end
+end
+
+---Draw a text gizmo.
+---@param point  box_2  # The point of the gizmo.
+---@param label  string # The label of the gizmo.
+---@param font   font   # The font of the gizmo.
+-- TO-DO origin, angle
+---@param scale  number # The text scale of the gizmo.
+---@param space  number # The text space of the gizmo.
+---@param color  number # The text color of the gizmo.
+---@return boolean click # True on click, false otherwise.
+function window:text(point, label, font, origin, angle, scale, space, color)
+    -- scroll.
+    point.y = point.y + self.point
+
+    if window_check_draw(self, box_2:new(point, vector_2:new(1.0, scale))) then
+        if font then
+            font:draw(label, point, origin, angle, scale, space, color)
+        else
+            window_font(self, scale):draw(label, point, origin, angle, scale, space, color)
+        end
+    end
+end
+
+function window:set_device(device)
+    if device == INPUT_DEVICE.BOARD or device == INPUT_DEVICE.PAD then
+        if not alicia.input.mouse.get_hidden() then
+            -- if mouse wasn't hidden, disable.
+            alicia.input.mouse.set_active(false)
+        end
+    else
+        if alicia.input.mouse.get_hidden() then
+            -- if mouse was hidden, enable.
+            alicia.input.mouse.set_active(true)
+        end
+
+        -- reset index.
+        self.index = 0.0
+    end
+
+    -- set the active device.
+    self.device = device
+end
+
+--[[----------------------------------------------------------------]]
+
+---@class gizmo
+---@field hover       number
+---@field sound_hover boolean
+---@field sound_focus boolean
+gizmo = {
+    __meta = {}
+}
+
+---Create a new gizmo.
+---@return gizmo value # The gizmo.
+function gizmo:new()
+    local i = {}
+    setmetatable(i, self.__meta)
+    getmetatable(i).__index = self
+
+    --[[]]
+
+    i.__type       = "gizmo"
+    i.hover        = 0.0
+    i.focus        = 0.0
+    -- TO-DO consider only initializing this for the appropiate gizmo and not before?
+    i.scroll_value = 0.0
+    i.scroll_frame = 0.0
+    i.entry_cursor = 0.0
+
+    return i
+end
+
+---Calculate the point of a gizmo with animation.
+---@param lobby lobby # The lobby.
+---@param shape box_2 # The shape.
+---@return box_2 shape # The shape, with animation.
+function gizmo:move(window, shape)
+    -- move shape horizontally.
+    --shape.point.x = shape.point.x + (ease.in_out_quad(self.hover) * 8.0) - 16.0 + math.out_quad(math.min(1.0, window.time * 4.0)) * 16.0
+
+    shape.point.y = shape.point.y - (ease.in_out_quad(self.hover) * 4.0) + (ease.in_out_quad(self.focus) * 4.0)
+
+    return shape
+end
+
+---Calculate the color of a gizmo with animation.
+---@param lobby lobby # The lobby.
+---@param color color # The color.
+---@return color color # The color, with animation.
+function gizmo:fade(window, color)
+    dark = 1.0
+
+    if window.pick and not (window.count == window.pick + 1) then
+        dark = 0.5
+    end
+
+    -- fade in/out from hover.
+    color = color * (ease.in_out_quad(self.hover) * 0.25 + 0.75) * dark
+
+    -- fade in/out from time.
+    --color.a = math.floor(math.out_quad(math.min(1.0, window.time * 4.0)) * 255.0)
+
+    return color
 end

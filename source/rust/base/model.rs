@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -150,11 +150,11 @@ impl LuaModel {
                     if IsTextureValid(map.texture) {
                         // apparently every model is also bound to the internal RL texture? what?
                         if map.texture.id != 1 {
-                            GenTextureMipmaps(&mut map.texture);
-                            SetTextureFilter(
-                                map.texture,
-                                TextureFilter_TEXTURE_FILTER_BILINEAR as i32,
-                            );
+                            //GenTextureMipmaps(&mut map.texture);
+                            //SetTextureFilter(
+                            //    map.texture,
+                            //    TextureFilter_TEXTURE_FILTER_BILINEAR as i32,
+                            //);
                         }
                     }
                 }
@@ -339,7 +339,6 @@ impl mlua::UserData for LuaModel {
             },
         );
 
-        /*
         /* entry
         {
             "version": "1.0.0",
@@ -355,23 +354,37 @@ impl mlua::UserData for LuaModel {
         */
         method.add_method_mut(
             "draw_transform",
-            |lua, this, (point, angle, scale, color): (LuaValue, LuaValue, LuaValue, LuaValue)| {
-                // TO-DO port
+            |lua, this, (point, angle, scale, color, r3d): (LuaValue, LuaValue, LuaValue, LuaValue, bool)| unsafe {
                 let point: Vector3 = lua.from_value(point)?;
                 let angle: Vector4 = lua.from_value(angle)?;
                 let scale: Vector3 = lua.from_value(scale)?;
                 let color: Color = lua.from_value(color)?;
 
-                this.0.transform = ((Matrix::scale(scale.x, scale.y, scale.z) * angle.to_matrix()) * Matrix::translate(point.x, point.y, point.z));
+                let point = MatrixTranslate(point.x, point.y, point.z);
+                let angle = MatrixRotate(Vector3 { x: angle.x, y: angle.y, z: angle.z }, angle.w);
+                let scale = MatrixScale(scale.x, scale.y, scale.z);
 
-                DrawModel(*this, Vector3::zero(), 1.0, color);
+                this.0.transform = MatrixMultiply(MatrixMultiply(scale, angle), point);
 
-                this.0.transform = Matrix::identity();
+                if r3d {
+                    R3D_DrawModel(
+                        this.0,
+                        Vector3 {
+                            x: 0.0,
+                            y: 0.0,
+                            z: 0.0,
+                        },
+                        1.0,
+                    );
+                } else {
+                    DrawModel(this.0, Vector3 { x: 0.0, y: 0.0, z: 0.0 }, 1.0, color);
+                }
+
+                this.0.transform = MatrixIdentity();
 
                 Ok(())
             },
         );
-        */
 
         /* entry
         {

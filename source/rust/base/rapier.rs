@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -150,7 +150,7 @@ impl mlua::UserData for Rapier {
             "info": "Cast a ray.",
             "member": [
                 { "name": "ray",              "info": "Ray to cast.", "kind": "ray"     },
-                { "name": "length",           "info": "Ray length.",  "kind": "number"  },
+                { "name": "range",            "info": "Ray range.",   "kind": "number"  },
                 { "name": "solid",            "info": "TO-DO",        "kind": "boolean" },
                 { "name": "exclude_rigid",    "info": "TO-DO",        "kind": "table"   },
                 { "name": "exclude_collider", "info": "TO-DO",        "kind": "table"   }
@@ -164,7 +164,7 @@ impl mlua::UserData for Rapier {
             "cast_ray",
             |lua,
              this,
-             (ray, length, solid, exclude_rigid, exclude_collider): (
+             (ray, range, solid, exclude_rigid, exclude_collider): (
                 LuaValue,
                 f32,
                 bool,
@@ -191,7 +191,7 @@ impl mlua::UserData for Rapier {
                     &this.rigid_body_set,
                     &this.collider_set,
                     &ray,
-                    length,
+                    range,
                     solid,
                     filter,
                 ) {
@@ -208,10 +208,10 @@ impl mlua::UserData for Rapier {
             "name": "rapier:cast_ray_normal",
             "info": "Cast a ray, and also get the normal information..",
             "member": [
-                { "name": "ray",            "info": "Ray to cast.", "kind": "ray"     },
-                { "name": "length",         "info": "Ray length.",  "kind": "number"  },
-                { "name": "solid",          "info": "TO-DO",        "kind": "boolean" },
-                { "name": "exclude_rigid",  "info": "TO-DO",        "kind": "table"   }
+                { "name": "ray",              "info": "Ray to cast.", "kind": "ray"     },
+                { "name": "range",            "info": "Ray range.",   "kind": "number"  },
+                { "name": "solid",            "info": "TO-DO",        "kind": "boolean" },
+                { "name": "exclude_rigid",    "info": "TO-DO",        "kind": "table"   },
                 { "name": "exclude_collider", "info": "TO-DO",        "kind": "table"   }
             ],
             "result": [
@@ -223,7 +223,7 @@ impl mlua::UserData for Rapier {
             "cast_ray_normal",
             |lua,
              this,
-             (ray, length, solid, exclude_rigid, exclude_collider): (
+             (ray, range, solid, exclude_rigid, exclude_collider): (
                 LuaValue,
                 f32,
                 bool,
@@ -250,7 +250,7 @@ impl mlua::UserData for Rapier {
                     &this.rigid_body_set,
                     &this.collider_set,
                     &ray,
-                    length,
+                    range,
                     solid,
                     filter,
                 ) {
@@ -271,7 +271,18 @@ impl mlua::UserData for Rapier {
         {
             "version": "1.0.0",
             "name": "rapier:test_intersect_cuboid_cuboid",
-            "info": "TO-DO"
+            "info": "Check if a cuboid is intersecting against another cuboid.",
+            "member": [
+                { "name": "point_a", "info": "Point of cuboid (A).", "kind": "vector_3" },
+                { "name": "angle_a", "info": "Angle of cuboid (A).", "kind": "vector_3" },
+                { "name": "shape_a", "info": "Shape of cuboid (A).", "kind": "vector_3" },
+                { "name": "point_b", "info": "Point of cuboid (B).", "kind": "vector_3" },
+                { "name": "angle_b", "info": "Angle of cuboid (B).", "kind": "vector_3" },
+                { "name": "shape_b", "info": "Shape of cuboid (B).", "kind": "vector_3" }
+            ],
+            "result": [
+                { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+            ]
         }
         */
         method.add_method_mut(

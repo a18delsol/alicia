@@ -1,5 +1,5 @@
 --[[
--- Copyright (c) 2025 a18delsol
+-- Copyright (c) 2025 luxreduxdelux
 --
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are met:
@@ -83,8 +83,8 @@ function vector_2:new(x, y)
     --[[]]
 
     i.__type = "vector_2"
-    i.x = x
-    i.y = y
+    i.x      = x
+    i.y      = y
 
     return i
 end
@@ -157,6 +157,17 @@ function vector_2:angle(value)
     return result;
 end
 
+-- TO-DO
+function vector_2:rotate(angle)
+    local cos = math.cos(angle)
+    local sin = math.sin(angle)
+
+    return vector_2:new(
+        self.x * cos - self.y * sin,
+        self.x * sin + self.y * cos
+    )
+end
+
 ---Scale a vector by the current 2D camera's zoom scale.
 ---@param camera camera_2d # The current 2D camera.
 ---@return vector_2 value # The vector.
@@ -203,9 +214,9 @@ function vector_3:new(x, y, z)
     --[[]]
 
     i.__type = "vector_3"
-    i.x = x
-    i.y = y
-    i.z = z
+    i.x      = x
+    i.y      = y
+    i.z      = z
 
     return i
 end
@@ -243,7 +254,7 @@ end
 
 ---Get a vector, with every component set to "1".
 ---@param scalar? number # Scale of the "X", "Y" and "Z" component.
----@return vector_2 value # The vector.
+---@return vector_3 value # The vector.
 function vector_3:one(scalar)
     return vector_3:new(scalar or 1.0, scalar or 1.0, scalar or 1.0)
 end
@@ -413,42 +424,47 @@ function vector_4:new(x, y, z, w)
     --[[]]
 
     i.__type = "vector_4"
-    i.x = x
-    i.y = y
-    i.z = z
-    i.w = w
+    i.x      = x
+    i.y      = y
+    i.z      = z
+    i.w      = w
 
     return i
 end
 
 ---Get the "X" vector.
+---@param scalar? number # Scale of the "X" component.
 ---@return vector_4 value # The vector.
-function vector_4:x()
-    return vector_4:new(1.0, 0.0, 0.0, 0.0)
+function vector_4:x(scalar)
+    return vector_4:new(scalar or 1.0, 0.0, 0.0, 0.0)
 end
 
 ---Get the "Y" vector.
+---@param scalar? number # Scale of the "Y" component.
 ---@return vector_4 value # The vector.
-function vector_4:y()
-    return vector_4:new(0.0, 1.0, 0.0, 0.0)
+function vector_4:y(scalar)
+    return vector_4:new(0.0, scalar or 1.0, 0.0, 0.0)
 end
 
 ---Get the "Z" vector.
+---@param scalar? number # Scale of the "Z" component.
 ---@return vector_4 value # The vector.
-function vector_4:z()
-    return vector_4:new(0.0, 0.0, 1.0, 0.0)
+function vector_4:z(scalar)
+    return vector_4:new(0.0, 0.0, scalar or 1.0, 0.0)
 end
 
 ---Get the "W" vector.
+---@param scalar? number # Scale of the "W" component.
 ---@return vector_4 value # The vector.
-function vector_4:w()
-    return vector_4:new(0.0, 0.0, 0.0, 1.0)
+function vector_4:w(scalar)
+    return vector_4:new(0.0, 0.0, 0.0, scalar or 1.0)
 end
 
 ---Get a vector, with every component set to "1".
+---@param scalar? number # Scale of the "X", "Y", "Z" and "W" component.
 ---@return vector_4 value # The vector.
-function vector_4:one()
-    return vector_4:new(1.0, 1.0, 1.0, 1.0)
+function vector_4:one(scalar)
+    return vector_4:new(scalar or 1.0, scalar or 1.0, scalar or 1.0, scalar or 1.0)
 end
 
 ---Get a vector, with every component set to "0".
@@ -528,8 +544,8 @@ function box_3:new(min, max)
     --[[]]
 
     i.__type = "box_3"
-    i.min = min
-    i.max = max
+    i.min    = min
+    i.max    = max
 
     return i
 end
@@ -604,10 +620,10 @@ function color:new(r, g, b, a)
     --[[]]
 
     i.__type = "color"
-    i.r = r
-    i.g = g
-    i.b = b
-    i.a = a
+    i.r      = r
+    i.g      = g
+    i.b      = b
+    i.a      = a
 
     return i
 end
@@ -655,10 +671,10 @@ function camera_2d:new(shift, focus, angle, zoom)
     --[[]]
 
     i.__type = "camera_2d"
-    i.shift = shift
-    i.focus = focus
-    i.angle = angle
-    i.zoom = zoom
+    i.shift  = shift
+    i.focus  = focus
+    i.angle  = angle
+    i.zoom   = zoom
 
     return i
 end
@@ -689,11 +705,11 @@ function camera_3d:new(point, focus, angle, zoom, kind)
     --[[]]
 
     i.__type = "camera_3d"
-    i.point = point
-    i.focus = focus
-    i.angle = angle
-    i.zoom = zoom
-    i.kind = kind
+    i.point  = point
+    i.focus  = focus
+    i.angle  = angle
+    i.zoom   = zoom
+    i.kind   = kind
 
     return i
 end

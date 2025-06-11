@@ -20,7 +20,7 @@ default = [
 	#"discord",
 	#"embed",
 	# Only enable this if you want to write documentation out to "../alicia.wiki".
-	#"documentation"
+	"documentation"
 ]
 serialization = ["dep:serde_yaml", "dep:toml", "dep:serde-xml-rs", "dep:serde_ini"]
 system_info   = ["dep:sysinfo"]

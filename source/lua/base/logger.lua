@@ -1,5 +1,5 @@
 --[[
--- Copyright (c) 2025 a18delsol
+-- Copyright (c) 2025 luxreduxdelux
 --
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are met:
@@ -51,51 +51,23 @@
 local LOGGER_LINE_COLOR_HISTORY = color:new(127.0, 127.0, 127.0, 255.0)
 local LOGGER_LINE_COLOR_MESSAGE = color:new(255.0, 255.0, 255.0, 255.0)
 local LOGGER_LINE_COLOR_FAILURE = color:new(255.0, 0.0, 0.0, 255.0)
-local LOGGER_LINE_COUNT         = 4.0
+local LOGGER_LINE_COUNT         = 48.0
 local LOGGER_LINE_DELAY         = 4.0
 local LOGGER_LINE_LABEL_TIME    = true
-local LOGGER_ACTION_ABOVE       = action:new(
-    {
-        action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.UP),
-    }
-)
-local LOGGER_ACTION_BELOW       = action:new(
-    {
-        action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.DOWN),
-    }
-)
-
----@class logger_line
-logger_line                     = {
-    __meta = {}
-}
-
-function logger_line:new(label, color)
-    local i = {}
-    setmetatable(i, self.__meta)
-    getmetatable(i).__index = self
-
-    --[[]]
-
-    i.__type = "logger_line"
-    i.label = label
-    i.color = color
-    i.time = alicia.general.get_time()
-
-    return i
-end
+local LOGGER_ACTION_ABOVE       = action:new({ action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.UP) })
+local LOGGER_ACTION_BELOW       = action:new({ action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.DOWN) })
+local LOGGER_ACTION_TOGGLE      = action:new({ action_button:new(INPUT_DEVICE.BOARD, INPUT_BOARD.F2) })
+local LOGGER_FONT_SCALE         = 24.0
+local LOGGER_FONT_SPACE         = 2.0
+local LOGGER_LINE_CAP           = 4.0
 
 --[[----------------------------------------------------------------]]
-
-local LOGGER_FONT_SCALE = 24.0
-local LOGGER_FONT_SPACE = 2.0
-local LOGGER_LINE_CAP   = 4.0
 
 ---@class logger
 ---@field current  table
 ---@field active  boolean
 ---@field window  window
-logger                  = {
+logger = {
     __meta = {}
 }
 
@@ -108,17 +80,19 @@ function logger:new()
 
     --[[]]
 
-    i.__type        = "logger"
-    i.font          = alicia.font.new_default(LOGGER_FONT_SCALE)
-    i.work          = ""
-    i.current       = {}
-    i.history       = {}
-    i.active        = false
-    i.window        = window:new()
+    i.__type  = "logger"
+    i.font    = alicia.font.new_default(LOGGER_FONT_SCALE)
+    i.work    = ""
+    i.current = {}
+    i.history = {}
+    i.active  = false
+    i.window  = window:new()
 
+    --[[]]
+
+    -- replace default print function with our own.
     local lua_print = print
 
-    -- over-ride default print function with our own.
     print           = function(...)
         lua_print(...)
         i:print(..., color:new(255.0, 255.0, 255.0, 255.0))
@@ -129,53 +103,61 @@ end
 
 ---Draw the logger.
 function logger:draw()
+    -- get screen shape.
     local shape = vector_2:new(alicia.window.get_shape())
 
-    if alicia.input.board.get_press(INPUT_BOARD.F2) then
+    -- toggle the active state of the logger console.
+    if LOGGER_ACTION_TOGGLE:press() then
         self.active = not self.active
     end
 
+    -- if the logger is active...
     if self.active then
         local shift = nil
         local click = false
 
+        -- scroll -/+1 on the logger history.
         if LOGGER_ACTION_ABOVE:press_repeat() then shift = 1 * -1 end
         if LOGGER_ACTION_BELOW:press_repeat() then shift = 1 end
 
-        if shift then
-            if #self.history > 0 then
-                local match = false
+        -- if we can scroll the logger history...
+        if shift and #self.history > 0 then
+            local match = false
 
-                for i, entry in ipairs(self.history) do
-                    if entry == self.work then
-                        if shift == -1 then
-                            if self.history[i - 1] then
-                                self.work = self.history[i - 1]
-                            else
-                                self.work = self.history[#self.history]
-                            end
+            -- iterate over the history, try to find an entry that is the same as our work string.
+            for i, entry in ipairs(self.history) do
+                -- if we find it, then scroll -/+1 above it.
+                if entry == self.work then
+                    if shift == -1 then
+                        if self.history[i - 1] then
+                            self.work = self.history[i - 1]
                         else
-                            if self.history[i + 1] then
-                                self.work = self.history[i + 1]
-                            else
-                                self.work = self.history[1]
-                            end
+                            self.work = self.history[#self.history]
                         end
-
-                        match = true
-                        break
+                    else
+                        if self.history[i + 1] then
+                            self.work = self.history[i + 1]
+                        else
+                            self.work = self.history[1]
+                        end
                     end
-                end
 
-                if not match then
-                    self.work = self.history[#self.history]
+                    match = true
+                    break
                 end
+            end
+
+            -- no match found, roll-over.
+            if not match then
+                self.work = self.history[#self.history]
             end
         end
 
+        -- draw semi-opaque background.
         alicia.draw_2d.draw_box_2(box_2:new(vector_2:zero(), shape), vector_2:zero(), 0.0,
             color:new(0.0, 0.0, 0.0, 127.0))
 
+        -- draw console entry.
         self.window:draw(function()
             self.work, click = self.window:entry(
                 box_2:new(vector_2:new(8.0, shape.y - (LOGGER_FONT_SCALE + 8.0)),
@@ -183,25 +165,24 @@ function logger:draw()
                 self.work)
         end)
 
-        if click then
-            if not (self.work == "") then
-                self:print(self.work, color:new(160.0, 160.0, 160.0, 255.0))
+        -- if the user has hit RETURN, and the work string is not empty, then execute the Lua code in the work string.
+        if click and not (self.work == "") then
+            self:print(self.work, color:new(160.0, 160.0, 160.0, 255.0))
 
-                local call, error = loadstring(self.work)
+            local call, error = loadstring(self.work)
 
-                if call then
-                    local success, message = pcall(call)
+            if call then
+                local success, message = pcall(call)
 
-                    if not success then
-                        self:print(message, color:new(255.0, 0.0, 0.0, 255.0))
-                    end
-                else
-                    self:print(error, color:new(255.0, 0.0, 0.0, 255.0))
+                if not success then
+                    self:print(message, color:new(255.0, 0.0, 0.0, 255.0))
                 end
-
-                table.insert(self.history, self.work)
-                self.work = ""
+            else
+                self:print(error, color:new(255.0, 0.0, 0.0, 255.0))
             end
+
+            table.insert(self.history, self.work)
+            self.work = ""
         end
     end
 
@@ -251,10 +232,6 @@ function logger:draw()
                     box_2:new(text_point_b, shape - vector_2:x(text_point_b.x)), LOGGER_FONT_SCALE,
                     LOGGER_FONT_SPACE,
                     true, line.color)
-
-                --alicia.draw_2d.draw_box_2(box_2:new(text_point_a.x, text_point_a.y, shape.x - 24.0, result),
-                --    vector_2:zero(), 0.0,
-                --    color:new(0.0, 255.0, 0.0, 33.0))
             end
         end
     end
@@ -271,12 +248,30 @@ function logger:print(line_label, line_color)
     table.insert(self.current, logger_line:new(tostring(line_label), line_color))
 
     -- if logger line count is over the cap...
-    if #self.current > 39 then
+    if #self.current > LOGGER_LINE_COUNT then
         -- pop one logger line.
         table.remove(self.current, 1)
     end
 end
 
-function logger:clear()
-    self.current = {}
+--[[----------------------------------------------------------------]]
+
+---@class logger_line
+logger_line = {
+    __meta = {}
+}
+
+function logger_line:new(label, color)
+    local i = {}
+    setmetatable(i, self.__meta)
+    getmetatable(i).__index = self
+
+    --[[]]
+
+    i.__type = "logger_line"
+    i.label  = label
+    i.color  = color
+    i.time   = alicia.general.get_time()
+
+    return i
 end

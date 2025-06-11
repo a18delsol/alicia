@@ -1,5 +1,5 @@
 --[[
--- Copyright (c) 2025 a18delsol
+-- Copyright (c) 2025 luxreduxdelux
 --
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are met:
@@ -372,7 +372,7 @@ function system:set_shader(faux_name, faux_path_vs, faux_path_fs, force)
     local asset_fs = self.locate[faux_path_fs]
 
     if asset_vs.kind == FILE_KIND.DISK then
-        asset_vs = alicia.file.get(asset_vs.path)
+        asset_vs = alicia.file.get_file(asset_vs.path)
     elseif asset_vs.kind == FILE_KIND.PACK then
         asset_vs = asset_vs.path:get_file(faux_path_vs)
     elseif asset_vs.kind == FILE_KIND.EMBED then
@@ -380,7 +380,7 @@ function system:set_shader(faux_name, faux_path_vs, faux_path_fs, force)
     end
 
     if asset_fs.kind == FILE_KIND.DISK then
-        asset_fs = alicia.file.get(asset_fs.path)
+        asset_fs = alicia.file.get_file(asset_fs.path)
     elseif asset_fs.kind == FILE_KIND.PACK then
         asset_fs = asset_fs.path:get_file(faux_path_vs)
     elseif asset_fs.kind == FILE_KIND.EMBED then

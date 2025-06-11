@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -60,15 +60,26 @@ use std::path::PathBuf;
 fn main() {
     use cmake::Config;
 
+    let build_type = {
+        #[cfg(debug_assertions)]
+        {
+            "Debug"
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            "Release"
+        }
+    };
+
     let dst = Config::new("source/rust/base/external/r3d-master/external/raylib")
-        //.define("CMAKE_BUILD_TYPE", "Release")
+        .define("CMAKE_BUILD_TYPE", build_type)
         .build_target(".")
         .build();
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=raylib");
 
     let dst = Config::new("source/rust/base/external/r3d-master")
-        //.define("CMAKE_BUILD_TYPE", "Release")
+        .define("CMAKE_BUILD_TYPE", build_type)
         .define("R3D_RAYLIB_VENDORED", "1")
         .build();
     println!("cargo:rustc-link-search=native={}/build", dst.display());
@@ -284,7 +295,7 @@ alicia = {}
 r#"---{info}
 ---
 --- ---{feature}{head}
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/{path}#L{line})
+---[Source Code Definition](https://github.com/luxreduxdelux/alicia/tree/main/{path}#L{line})
 "#;
 
     #[rustfmt::skip]
@@ -312,7 +323,7 @@ r#"---{info}
     const META_ENTRY_FOOTER: &'static str =
 r#"---
 --- ---{feature}{head}{routine}
----[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/{path}#L{line})
+---[Source Code Definition](https://github.com/luxreduxdelux/alicia/tree/main/{path}#L{line})
 function {name}({member}) end
 
 "#;
@@ -343,7 +354,7 @@ r#"## {name}
 
     #[rustfmt::skip]
     const WIKI_CLASS_FOOTER: &'static str =
-r#"[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/{path}#L{line})
+r#"[Source Code Definition](https://github.com/luxreduxdelux/alicia/tree/main/{path}#L{line})
 
 "#;
 
@@ -368,7 +379,7 @@ r#"## {name}
 
         #[rustfmt::skip]
     const WIKI_ENTRY_FOOTER: &'static str =
-r#"[Source Code Definition](https://github.com/a18delsol/alicia/tree/main/{path}#L{line})
+r#"[Source Code Definition](https://github.com/luxreduxdelux/alicia/tree/main/{path}#L{line})
 
 "#;
 

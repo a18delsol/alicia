@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -132,15 +132,22 @@ impl LuaShader {
     {
         "version": "1.0.0",
         "name": "alicia.shader.new_from_memory",
-        "info": "TO-DO"
+        "info": "Create a new shader resource, from memory.",
+        "member": [
+            { "name": "v_data", "info": ".vs file data.", "kind": "string" },
+            { "name": "f_data", "info": ".fs file data.", "kind": "string" }
+        ],
+        "result": [
+            { "name": "shader", "info": "LuaShader resource.", "kind": "shader" }
+        ]
     }
     */
     fn new_from_memory(
         lua: &Lua,
-        (v_path, f_path): (Option<String>, Option<String>),
+        (v_data, f_data): (Option<String>, Option<String>),
     ) -> mlua::Result<Self> {
         unsafe {
-            let v_path = match v_path {
+            let v_data = match v_data {
                 Some(name) => {
                     let pointer = Script::rust_to_c_string(&ScriptData::get_path(lua, &name)?)?;
 
@@ -149,7 +156,7 @@ impl LuaShader {
                 None => std::ptr::null(),
             };
 
-            let f_path = match f_path {
+            let f_data = match f_data {
                 Some(name) => {
                     let pointer = Script::rust_to_c_string(&ScriptData::get_path(lua, &name)?)?;
 
@@ -158,7 +165,7 @@ impl LuaShader {
                 None => std::ptr::null(),
             };
 
-            let data = LoadShaderFromMemory(v_path, f_path);
+            let data = LoadShaderFromMemory(v_data, f_data);
 
             if IsShaderValid(data) {
                 Ok(Self(data))
@@ -179,36 +186,40 @@ impl mlua::UserData for LuaShader {
         {
             "version": "1.0.0",
             "name": "shader:begin",
-            "info": "TO-DO",
+            "info": "Initialize the shader.",
             "member": [
-                { "name": "call", "info": "The draw code.", "kind": "function" }
+                { "name": "call", "info": "The draw code.", "kind": "function" },
+                { "name": "...",  "info": "Variadic data.", "kind": "any"      }
             ]
         }
         */
-        method.add_method("begin", |_: &Lua, this, call: mlua::Function| {
-            unsafe {
-                BeginShaderMode(this.0);
+        method.add_method(
+            "begin",
+            |_: &Lua, this, (call, variadic): (mlua::Function, mlua::Variadic<LuaValue>)| {
+                unsafe {
+                    BeginShaderMode(this.0);
 
-                let call = call.call::<()>(());
+                    let call = call.call::<()>(variadic);
 
-                EndShaderMode();
+                    EndShaderMode();
 
-                call?;
-            }
+                    call?;
+                }
 
-            Ok(())
-        });
+                Ok(())
+            },
+        );
 
         /* entry
         {
             "version": "1.0.0",
             "name": "shader:get_location_name",
-            "info": "TO-DO",
+            "info": "Get the location of a shader variable, by name.",
             "member": [
-                { "name": "name", "info": "TO-DO", "kind": "string" }
+                { "name": "name", "info": "Variable name.", "kind": "string" }
             ],
             "result": [
-                { "name": "location", "info": "TO-DO", "kind": "number" }
+                { "name": "location", "info": "Shader variable location.", "kind": "number" }
             ]
         }
         */
@@ -223,12 +234,12 @@ impl mlua::UserData for LuaShader {
         {
             "version": "1.0.0",
             "name": "shader:get_location_attribute_name",
-            "info": "TO-DO",
+            "info": "Get the location of a shader attribute, by name.",
             "member": [
-                { "name": "name", "info": "TO-DO", "kind": "string" }
+                { "name": "name", "info": "Attribute name.", "kind": "string" }
             ],
             "result": [
-                { "name": "location", "info": "TO-DO", "kind": "number" }
+                { "name": "location", "info": "Shader attribute location.", "kind": "number" }
             ]
         }
         */
@@ -246,12 +257,12 @@ impl mlua::UserData for LuaShader {
         {
             "version": "1.0.0",
             "name": "shader:get_location",
-            "info": "TO-DO",
+            "info": "Get the location of a shader variable, by index.",
             "member": [
-                { "name": "location", "info": "TO-DO", "kind": "number" }
+                { "name": "location", "info": "Variable index.", "kind": "number" }
             ],
             "result": [
-                { "name": "location", "info": "TO-DO", "kind": "number" }
+                { "name": "location", "info": "Shader variable location.", "kind": "number" }
             ]
         }
         */
@@ -269,10 +280,10 @@ impl mlua::UserData for LuaShader {
         {
             "version": "1.0.0",
             "name": "shader:set_location",
-            "info": "TO-DO",
+            "info": "Set the location of a shader variable.",
             "member": [
-                { "name": "location", "info": "TO-DO", "kind": "number" },
-                { "name": "value",    "info": "TO-DO", "kind": "number" }
+                { "name": "location", "info": "Variable index.", "kind": "number" },
+                { "name": "value",    "info": "Variable value.", "kind": "number" }
             ]
         }
         */
@@ -290,46 +301,47 @@ impl mlua::UserData for LuaShader {
             },
         );
 
+        // TO-DO declare shader_value_kind in Lua
         /* entry
         {
             "version": "1.0.0",
             "name": "shader:set_shader_value",
-            "info": "TO-DO",
+            "info": "Set the value of a shader variable.",
             "member": [
-                { "name": "location", "info": "TO-DO", "kind": "number" },
-                { "name": "kind",     "info": "TO-DO", "kind": "number" },
-                { "name": "value",    "info": "TO-DO", "kind": "any"    }
+                { "name": "location", "info": "Variable index.", "kind": "number" },
+                { "name": "class",    "info": "Variable class.", "kind": "number" },
+                { "name": "value",    "info": "Variable value.", "kind": "any"    }
             ]
         }
         */
         method.add_method_mut(
             "set_shader_value",
-            |lua, this, (location, kind, value): (i32, i32, LuaValue)| unsafe {
-                match kind {
+            |lua, this, (location, class, value): (i32, i32, LuaValue)| unsafe {
+                match class {
                     0 => {
                         let mut value: f32 = lua.from_value(value)?;
                         let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
-                        SetShaderValue(this.0, location, value_p, kind);
+                        SetShaderValue(this.0, location, value_p, class);
                     }
                     1 => {
                         let mut value: Vector2 = lua.from_value(value)?;
                         let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
-                        SetShaderValue(this.0, location, value_p, kind);
+                        SetShaderValue(this.0, location, value_p, class);
                     }
                     2 => {
                         let mut value: Vector3 = lua.from_value(value)?;
                         let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
-                        SetShaderValue(this.0, location, value_p, kind);
+                        SetShaderValue(this.0, location, value_p, class);
                     }
                     3 => {
                         let mut value: Vector4 = lua.from_value(value)?;
                         let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
-                        SetShaderValue(this.0, location, value_p, kind);
+                        SetShaderValue(this.0, location, value_p, class);
                     }
                     _ => {
                         let mut value: i32 = lua.from_value(value)?;
                         let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
-                        SetShaderValue(this.0, location, value_p, kind);
+                        SetShaderValue(this.0, location, value_p, class);
                     }
                 };
 

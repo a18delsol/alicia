@@ -1,5 +1,5 @@
 --[[
--- Copyright (c) 2025 a18delsol
+-- Copyright (c) 2025 luxreduxdelux
 --
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are met:
@@ -242,7 +242,10 @@ function table.restore_meta(value)
     end
 end
 
--- TO-DO
+---Merge the content of a table A and a table B into a table C. The merge operation is shallow, and not a deep copy.
+---@param a table # Table A.
+---@param b table # Table B.
+---@return c table # Table C.
 function table.merge(a, b)
     local result = {}
 
@@ -258,6 +261,20 @@ function table.merge(a, b)
 end
 
 --[[----------------------------------------------------------------]]
+
+-- TO-DO
+function math.angle_in_interval(angle, a, b)
+    if a <= b then
+        return angle >= a and angle <= b
+    end
+
+    return (angle >= a and angle <= 3.14 * 2.0) or (angle >= 0 and angle <= b)
+end
+
+-- TO-DO
+function math.swap(a, b)
+    return b, a
+end
 
 ---Check the sanity of a number, which will check for NaN and Infinite.
 ---@param value number # Number to check.
@@ -387,10 +404,16 @@ function math.direction_from_euler(angle)
     return d_x, d_y, d_z
 end
 
+---Convert an angle from degrees to radians.
+---@param value # The angle, in degrees.
+---@return number value # The angle, in radians.
 function math.degree_to_radian(value)
     return value * (math.pi / 180.0)
 end
 
+---Convert an angle from radians to degrees.
+---@param value # The angle, in radians.
+---@return number value # The angle, in degrees.
 function math.radian_to_degree(value)
     return value * (180.0 / math.pi)
 end

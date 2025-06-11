@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -337,7 +337,8 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_line",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_line",
         "info": "Draw a line.",
         "member": [
             { "name": "point_a", "info": "The point A of the line.",   "kind": "vector_3" },
@@ -362,8 +363,13 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_point",
-        "info": "TO-DO"
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_point",
+        "info": "Draw a point.",
+        "member": [
+            { "name": "point", "info": "The point.",              "kind": "vector_3" },
+            { "name": "color", "info": "The color of the point.", "kind": "color"    }
+        ]
     }
     */
     fn draw_point(lua: &Lua, (point, color): (LuaValue, LuaValue)) -> mlua::Result<()> {
@@ -378,28 +384,43 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_circle",
-        "info": "TO-DO"
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_circle",
+        "info": "Draw a circle.",
+        "member": [
+            { "name": "point", "info": "The point of the circle.", "kind": "vector_3" },
+            { "name": "range", "info": "The range of the circle.", "kind": "number"   },
+            { "name": "axis",  "info": "The axis of the circle.",  "kind": "vector_3" },
+            { "name": "range", "info": "The angle of the circle.", "kind": "number"   },
+            { "name": "color", "info": "The color of the circle.", "kind": "color"    }
+        ]
     }
     */
     fn draw_circle(
         lua: &Lua,
-        (point, radius, axis, angle, color): (LuaValue, f32, LuaValue, f32, LuaValue),
+        (point, range, axis, angle, color): (LuaValue, f32, LuaValue, f32, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector3 = lua.from_value(point)?;
         let axis: Vector3 = lua.from_value(axis)?;
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCircle3D(point, radius, axis, angle, color);
+            DrawCircle3D(point, range, axis, angle, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_triangle",
-        "info": "TO-DO"
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_triangle",
+        "info": "Draw a triangle.",
+        "member": [
+            { "name": "point_a", "info": "The point (A) of the triangle.", "kind": "vector_3" },
+            { "name": "point_b", "info": "The point (B) of the triangle.", "kind": "vector_3" },
+            { "name": "point_c", "info": "The point (C) of the triangle.", "kind": "vector_3" },
+            { "name": "color",   "info": "The color of the triangle.",     "kind": "color"    }
+        ]
     }
     */
     fn draw_triangle(
@@ -419,8 +440,13 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_triangle_strip",
-        "info": "TO-DO"
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_triangle_strip",
+        "info": "Draw a triangle strip.",
+        "member": [
+            { "name": "point", "info": "The point list of the triangle.", "kind": "table" },
+            { "name": "color", "info": "The color of the triangle.",      "kind": "color" }
+        ]
     }
     */
     fn draw_triangle_strip(lua: &Lua, (point, color): (LuaValue, LuaValue)) -> mlua::Result<()> {
@@ -435,7 +461,8 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_cube",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_cube",
         "info": "Draw a cube.",
         "member": [
             { "name": "point", "info": "The point of the cube.", "kind": "vector_3" },
@@ -460,7 +487,8 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_cube_wire",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_cube_wire",
         "info": "Draw a cube (wire-frame).",
         "member": [
             { "name": "point", "info": "The point of the cube.", "kind": "vector_3" },
@@ -485,51 +513,58 @@ mod draw_3d {
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_sphere",
-        "info": "TO-DO"
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_sphere",
+        "info": "Draw a sphere.",
+        "member": [
+            { "name": "point", "info": "The point of the sphere.",   "kind": "vector_3" },
+            { "name": "color", "info": "The color of the triangle.", "kind": "color" }
+        ]
     }
     */
     fn draw_sphere(
         lua: &Lua,
-        (point, radius, ring, slice, color): (LuaValue, f32, i32, i32, LuaValue),
+        (point, range, ring, slice, color): (LuaValue, f32, i32, i32, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector3 = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawSphereEx(point, radius, ring, slice, color);
+            DrawSphereEx(point, range, ring, slice, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_sphere_wire",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_sphere_wire",
         "info": "TO-DO"
     }
     */
     fn draw_sphere_wire(
         lua: &Lua,
-        (point, radius, ring, slice, color): (LuaValue, f32, i32, i32, LuaValue),
+        (point, range, ring, slice, color): (LuaValue, f32, i32, i32, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector3 = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawSphereWires(point, radius, ring, slice, color);
+            DrawSphereWires(point, range, ring, slice, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_cylinder",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_cylinder",
         "info": "TO-DO"
     }
     */
     fn draw_cylinder(
         lua: &Lua,
-        (point_a, point_b, radius_a, radius_b, count, color): (
+        (point_a, point_b, range_a, range_b, count, color): (
             LuaValue,
             LuaValue,
             f32,
@@ -543,20 +578,21 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCylinderEx(point_a, point_b, radius_a, radius_b, count, color);
+            DrawCylinderEx(point_a, point_b, range_a, range_b, count, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_cylinder_wire",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_cylinder_wire",
         "info": "TO-DO"
     }
     */
     fn draw_cylinder_wire(
         lua: &Lua,
-        (point_a, point_b, radius_a, radius_b, count, color): (
+        (point_a, point_b, range_a, range_b, count, color): (
             LuaValue,
             LuaValue,
             f32,
@@ -570,20 +606,21 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCylinderWiresEx(point_a, point_b, radius_a, radius_b, count, color);
+            DrawCylinderWiresEx(point_a, point_b, range_a, range_b, count, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_capsule",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_capsule",
         "info": "TO-DO"
     }
     */
     fn draw_capsule(
         lua: &Lua,
-        (point_a, point_b, radius, ring, slice, color): (
+        (point_a, point_b, range, ring, slice, color): (
             LuaValue,
             LuaValue,
             f32,
@@ -597,20 +634,21 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCapsule(point_a, point_b, radius, slice, ring, color);
+            DrawCapsule(point_a, point_b, range, slice, ring, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_capsule_wire",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_capsule_wire",
         "info": "TO-DO"
     }
     */
     fn draw_capsule_wire(
         lua: &Lua,
-        (point_a, point_b, radius, ring, slice, color): (
+        (point_a, point_b, range, ring, slice, color): (
             LuaValue,
             LuaValue,
             f32,
@@ -624,14 +662,15 @@ mod draw_3d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCapsule(point_a, point_b, radius, slice, ring, color);
+            DrawCapsule(point_a, point_b, range, slice, ring, color);
             Ok(())
         }
     }
 
     /* entry
     {
-        "version": "1.0.0", "name": "alicia.draw_3d.draw_plane",
+        "version": "1.0.0",
+        "name": "alicia.draw_3d.draw_plane",
         "info": "TO-DO"
     }
     */
@@ -942,20 +981,20 @@ mod draw_2d {
         "info": "Draw a circle.",
         "member": [
             { "name": "point",  "info": "TO-DO", "kind": "vector_2" },
-            { "name": "radius", "info": "TO-DO", "kind": "number"   },
+            { "name": "range", "info": "TO-DO", "kind": "number"   },
             { "name": "color",  "info": "TO-DO", "kind": "color"    }
         ]
     }
     */
     fn draw_circle(
         lua: &Lua,
-        (point, radius, color): (LuaValue, f32, LuaValue),
+        (point, range, color): (LuaValue, f32, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector2 = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCircleV(point, radius, color);
+            DrawCircleV(point, range, color);
             Ok(())
         }
     }
@@ -969,13 +1008,13 @@ mod draw_2d {
     */
     fn draw_circle_line(
         lua: &Lua,
-        (point, radius, color): (LuaValue, f32, LuaValue),
+        (point, range, color): (LuaValue, f32, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector2 = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCircleLinesV(point, radius, color);
+            DrawCircleLinesV(point, range, color);
             Ok(())
         }
     }
@@ -987,7 +1026,7 @@ mod draw_2d {
         "info": "Draw the sector of a circle.",
         "member": [
             { "name": "point",         "info": "TO-DO", "kind": "vector_2" },
-            { "name": "radius",        "info": "TO-DO", "kind": "number"   },
+            { "name": "range",        "info": "TO-DO", "kind": "number"   },
             { "name": "begin_angle",   "info": "TO-DO", "kind": "number"   },
             { "name": "close_angle",   "info": "TO-DO", "kind": "number"   },
             { "name": "segment_count", "info": "TO-DO", "kind": "number"   },
@@ -997,7 +1036,7 @@ mod draw_2d {
     */
     fn draw_circle_sector(
         lua: &Lua,
-        (point, radius, begin_angle, close_angle, segment_count, color): (
+        (point, range, begin_angle, close_angle, segment_count, color): (
             LuaValue,
             f32,
             f32,
@@ -1010,14 +1049,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCircleSector(
-                point,
-                radius,
-                begin_angle,
-                close_angle,
-                segment_count,
-                color,
-            );
+            DrawCircleSector(point, range, begin_angle, close_angle, segment_count, color);
             Ok(())
         }
     }
@@ -1031,13 +1063,13 @@ mod draw_2d {
     */
     fn draw_circle_sector_line(
         lua: &Lua,
-        (point, radius, angle_a, angle_b, count, color): (LuaValue, f32, f32, f32, i32, LuaValue),
+        (point, range, angle_a, angle_b, count, color): (LuaValue, f32, f32, f32, i32, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector2 = lua.from_value(point)?;
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawCircleSectorLines(point, radius, angle_a, angle_b, count, color);
+            DrawCircleSectorLines(point, range, angle_a, angle_b, count, color);
             Ok(())
         }
     }
@@ -1051,14 +1083,14 @@ mod draw_2d {
     */
     fn draw_circle_gradient(
         lua: &Lua,
-        (point, radius, color_a, color_b): (LuaValue, f32, LuaValue, LuaValue),
+        (point, range, color_a, color_b): (LuaValue, f32, LuaValue, LuaValue),
     ) -> mlua::Result<()> {
         let point: Vector2 = lua.from_value(point)?;
         let color_a: Color = lua.from_value(color_a)?;
         let color_b: Color = lua.from_value(color_b)?;
 
         unsafe {
-            DrawCircleGradient(point.x as i32, point.y as i32, radius, color_a, color_b);
+            DrawCircleGradient(point.x as i32, point.y as i32, range, color_a, color_b);
             Ok(())
         }
     }
@@ -1114,7 +1146,7 @@ mod draw_2d {
     */
     fn draw_ring(
         lua: &Lua,
-        (point, radius_a, radius_b, angle_a, angle_b, count, color): (
+        (point, range_a, range_b, angle_a, angle_b, count, color): (
             LuaValue,
             f32,
             f32,
@@ -1128,7 +1160,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawRing(point, radius_a, radius_b, angle_a, angle_b, count, color);
+            DrawRing(point, range_a, range_b, angle_a, angle_b, count, color);
             Ok(())
         }
     }
@@ -1142,7 +1174,7 @@ mod draw_2d {
     */
     fn draw_ring_line(
         lua: &Lua,
-        (point, radius_a, radius_b, angle_a, angle_b, count, color): (
+        (point, range_a, range_b, angle_a, angle_b, count, color): (
             LuaValue,
             f32,
             f32,
@@ -1156,7 +1188,7 @@ mod draw_2d {
         let color: Color = lua.from_value(color)?;
 
         unsafe {
-            DrawRing(point, radius_a, radius_b, angle_a, angle_b, count, color);
+            DrawRing(point, range_a, range_b, angle_a, angle_b, count, color);
             Ok(())
         }
     }

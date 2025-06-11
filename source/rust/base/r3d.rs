@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -90,7 +90,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, script_info: O
     // R3D_ApplyBlendMode
     //r3d.set("set_state", lua.create_function(self::set_state)?)?;
     // R3D_ApplyShadowCastMode
-    //r3d.set("set_state", lua.create_function(self::set_state)?)?;
+    r3d.set("set_shadow_cast_mode", lua.create_function(self::set_shadow_cast_mode)?)?;
     // R3D_ApplyBillboardMode
     //r3d.set("set_state", lua.create_function(self::set_state)?)?;
     // R3D_ApplyAlphaScissorThreshold
@@ -120,6 +120,14 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, script_info: O
     light.set("new", lua.create_function(LuaLight::new)?)?;
 
     r3d.set("light", light)?;
+
+    //================================================================
+
+    let sky = lua.create_table()?;
+
+    sky.set("new", lua.create_function(LuaSky::new)?)?;
+
+    r3d.set("sky", sky)?;
 
     //================================================================
 
@@ -170,12 +178,26 @@ fn set_base_color(lua: &Lua, color: LuaValue) -> mlua::Result<()> {
     }
 }
 
+fn set_shadow_cast_mode(lua: &Lua, mode: u32) -> mlua::Result<()> {
+    unsafe {
+        R3D_ApplyShadowCastMode(mode);
+        Ok(())
+    }
+}
+
 fn get_point_frustum(lua: &Lua, point: LuaValue) -> mlua::Result<bool> {
     unsafe { Ok(R3D_IsPointInFrustum(lua.from_value(point)?)) }
 }
 
 //================================================================
 
+/* class
+{
+    "version": "1.0.0",
+    "name": "light_handle",
+    "info": "An unique handle for a light in the R3D scene."
+}
+*/
 struct LuaLight(R3D_Light);
 
 impl Drop for LuaLight {
@@ -191,7 +213,13 @@ impl LuaLight {
     {
         "version": "1.0.0",
         "name": "alicia.r3d.light.new",
-        "info": "TO-DO"
+        "info": "Create a new light handle.",
+        "member": [
+            { "name": "kind", "info": "Light kind.", "kind": "number" }
+        ],
+        "result": [
+            { "name": "light", "info": "Light handle.", "kind": "light_handle" }
+        ]
     }
     */
     fn new(_: &Lua, kind: u32) -> mlua::Result<Self> {
@@ -209,7 +237,10 @@ impl mlua::UserData for LuaLight {
         {
             "version": "1.0.0",
             "name": "light:get_kind",
-            "info": "TO-DO"
+            "info": "Get the kind of the light.",
+            "result": [
+                { "name": "kind", "info": "Light kind.", "kind": "number" }
+            ]
         }
         */
         method.add_method_mut("get_kind", |_, this, _: ()| unsafe {
@@ -356,9 +387,6 @@ impl mlua::UserData for LuaLight {
                     R3D_DisableShadow(this.0, data);
                 }
 
-                // TO-DO hack.
-                R3D_ApplyShadowCastMode(2);
-
                 Ok(())
             },
         );
@@ -403,4 +431,48 @@ impl mlua::UserData for LuaLight {
 
         // TO-DO add bias.
     }
+}
+
+/* class
+{
+    "version": "1.0.0",
+    "name": "sky_handle",
+    "info": "TO-DO"
+}
+*/
+struct LuaSky(R3D_Skybox);
+
+impl Drop for LuaSky {
+    fn drop(&mut self) {
+        unsafe {
+            R3D_DisableSkybox();
+            R3D_UnloadSkybox(self.0);
+        }
+    }
+}
+
+impl LuaSky {
+    /* entry
+    {
+        "version": "1.0.0",
+        "name": "alicia.r3d.sky.new",
+        "info": "TO-DO"
+    }
+    */
+    fn new(lua: &Lua, path: String) -> mlua::Result<Self> {
+        let name = Script::rust_to_c_string(&ScriptData::get_path(lua, &path)?)?;
+
+        unsafe {
+            let data = R3D_LoadSkybox(name.as_ptr(), 0);
+
+            // TO-DO hack.
+            R3D_EnableSkybox(data);
+
+            Ok(Self(data))
+        }
+    }
+}
+
+impl mlua::UserData for LuaSky {
+    fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {}
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -109,7 +109,8 @@ impl LuaSound {
     }
     */
     async fn new(lua: Lua, (path, alias): (String, Option<usize>)) -> mlua::Result<Self> {
-        tokio::task::spawn_blocking(move || unsafe {
+        //tokio::task::spawn_blocking(move || unsafe {
+        unsafe {
             let name = Script::rust_to_c_string(&ScriptData::get_path(&lua, &path)?)?;
             let data = LoadSound(name.as_ptr());
             let alias = alias.unwrap_or_default();
@@ -128,9 +129,10 @@ impl LuaSound {
                     "LuaSound::new(): Could not load file \"{path}\"."
                 )))
             }
-        })
-        .await
-        .unwrap()
+        }
+        //})
+        //.await
+        //.unwrap()
     }
 
     /* entry

@@ -1,5 +1,5 @@
 --[[
--- Copyright (c) 2025 a18delsol
+-- Copyright (c) 2025 luxreduxdelux
 --
 -- Redistribution and use in source and binary forms, with or without
 -- modification, are permitted provided that the following conditions are met:
@@ -153,11 +153,15 @@ function scene:new()
     i.entity_array = {}
     i.entity_index = 2
     i.system       = system:new({ "data" })
+    i.render       = alicia.render_texture.new(vector_2:new(alicia.window.get_shape()) * 0.5)
     i.time         = 0.0
     i.tick         = 0.0
     i.step         = 0.0
 
     --[[]]
+
+    -- TO-DO use shader from parameter.
+    i.system:set_shader("render", "video/shader/base.vs", "video/shader/dither.fs")
 
     i.rapier = alicia.rapier:new()
     i.static = i.rapier:rigid_body(RIGID_BODY_KIND.FIXED)
@@ -167,6 +171,11 @@ function scene:new()
     -- should research if it's possible to only have one rigid body.
     i.rapier:set_rigid_body_user_data(i.static, 0)
     i.rapier:set_rigid_body_user_data(i.sensor, 1)
+
+    -- TO-DO use VFS.
+    --alicia.r3d.sky.new("data/video/sky.png")
+
+    alicia.r3d.set_shadow_cast_mode(2)
 
     alicia.r3d.set_back_color(color:black())
     alicia.r3d.set_base_color(color:new(33.0, 33.0, 33.0, 255.0))
@@ -359,7 +368,6 @@ function scene:set_state(state)
 
     -- enable/disable all light.
     for _, light in ipairs(self.light) do
-        print("light: " .. tostring(state))
         light:set_state(state)
     end
 end
@@ -367,12 +375,23 @@ end
 function scene:draw(call_main, call_side)
     collectgarbage("collect")
 
+    if alicia.window.get_resize() then
+        self.render = alicia.render_texture.new(vector_2:new(alicia.window.get_shape()) * 0.50)
+    end
+
+    self.render:set_R3D(true)
+
     --[[ update sound/music volume/pan. ]]
 
-    audio_update(self.sound, self.system.get_sound)
-    audio_update(self.music, self.system.get_music)
+    --audio_update(self.sound, self.system.get_sound)
+    --audio_update(self.music, self.system.get_music)
 
     --[[ main 3D pass. ]]
+
+    ---@type shader
+    local shader = self.system:get_shader("render")
+
+    --shader:set_shader_value(shader:get_location_name("timer"), 0, self.time)
 
     alicia.r3d.begin(function()
         for _, room in ipairs(self.room_array) do
@@ -391,10 +410,17 @@ function scene:draw(call_main, call_side)
         end
     end, self.camera_3d)
 
+    shader:begin(function()
+        self.render:draw_pro(
+            box_2:new(vector_2:zero(), vector_2:new(self.render.shape_x, -self.render.shape_y)),
+            box_2:new(vector_2:zero(), vector_2:new(alicia.window.get_shape())),
+            vector_2:zero(), 0.0, color:white())
+    end)
+
     --[[ side 3D pass. ]]
 
     alicia.draw_3d.begin(function()
-        self.rapier:debug_render()
+        --self.rapier:debug_render()
 
         if call_side then
             call_side()
@@ -406,9 +432,9 @@ end
 -- sound management.
 --[[----------------------------------------------------------------]]
 
-function scene:play_sound(system, path, point, dynamic, volume, distance_min, distance_max)
+function scene:play_sound(path, point, dynamic, volume, distance_min, distance_max)
     -- load the sound into memory.
-    local sound = system:get_sound(path)
+    local sound = self.system:get_sound(path)
     local alias = nil
 
     if sound:get_playing() then
@@ -460,9 +486,9 @@ function scene:play_sound(system, path, point, dynamic, volume, distance_min, di
     })
 end
 
-function scene:stop_sound(system, path)
+function scene:stop_sound(path)
     -- load the sound into memory.
-    local sound = system:get_sound(path)
+    local sound = self.system:get_sound(path)
 
     sound:stop()
 
@@ -475,9 +501,9 @@ function scene:stop_sound(system, path)
     end
 end
 
-function scene:stop_sound_all(system)
+function scene:stop_sound_all()
     for i, sound in ipairs(self.sound) do
-        local data = system:get_sound(sound.path)
+        local data = self.system:get_sound(sound.path)
 
         if data:get_playing(sound.alias) then
             data:stop(sound.alias)
@@ -485,9 +511,9 @@ function scene:stop_sound_all(system)
     end
 end
 
-function scene:set_sound_volume(system, path, volume)
+function scene:set_sound_volume(path, volume)
     -- load the sound into memory.
-    local sound = system:get_sound(path)
+    local sound = self.system:get_sound(path)
 
     sound:set_volume(volume)
 end

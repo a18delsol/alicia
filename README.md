@@ -27,7 +27,7 @@ As part of the Lua standard library:
 * User interface
 
 ## Usage
-Download the latest release from [here](https://github.com/a18delsol/alicia/releases) and launch Alicia. If no `info.json`, `main.lua` or folder with the name of `main` is found, Alicia will automatically launch the quick start menu to create a new project. From there, simply create a new project and open the newly made `main.lua` file for further information.
+Download the latest release from [here](https://github.com/luxreduxdelux/alicia/releases) and launch Alicia. If no `info.json`, `main.lua` or folder with the name of `main` is found, Alicia will automatically launch the quick start menu to create a new project. From there, simply create a new project and open the newly made `main.lua` file for further information.
 
 ## Example
 
@@ -43,7 +43,7 @@ and launch Alicia.
 
 ## Documentation
 
-You can find the Rust API and general purpose Alicia documentation [here](https://github.com/a18delsol/alicia/wiki). Creating a new Alicia project will automatically write a `meta.lua` file for use with the [LuaLS](https://github.com/LuaLS/lua-language-server) LSP.
+You can find the Rust API and general purpose Alicia documentation [here](https://github.com/luxreduxdelux/alicia/wiki). Creating a new Alicia project will automatically write a `meta.lua` file for use with the [LuaLS](https://github.com/LuaLS/lua-language-server) LSP.
 
 ## Build
 Run `cargo build --release` in the root of the Alicia folder.

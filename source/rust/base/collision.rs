@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -98,7 +98,14 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_box_2_box_2",
-    "info": "TO-DO"
+    "info": "Check if a 2D box is intersecting against another 2D box.",
+    "member": [
+        { "name": "box_a", "info": "2D box (A).", "kind": "box_2" },
+        { "name": "box_b", "info": "2D box (B).", "kind": "box_2" }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_box_2_box_2(lua: &Lua, (box_a, box_b): (LuaValue, LuaValue)) -> mlua::Result<bool> {
@@ -112,59 +119,92 @@ fn get_box_2_box_2(lua: &Lua, (box_a, box_b): (LuaValue, LuaValue)) -> mlua::Res
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_circle_circle",
-    "info": "TO-DO"
+    "info": "Check if a circle is intersecting against another circle.",
+    "member": [
+        { "name": "point_a",  "info": "Circle point (A).", "kind": "vector_2" },
+        { "name": "range_a",  "info": "Circle range (A).", "kind": "number"   },
+        { "name": "point_b",  "info": "Circle point (B).", "kind": "vector_2" },
+        { "name": "range_b",  "info": "Circle range (B).", "kind": "number"   }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_circle_circle(
     lua: &Lua,
-    (point_a, point_b, radius_a, radius_b): (LuaValue, LuaValue, f32, f32),
+    (point_a, range_a, point_b, range_b): (LuaValue, f32, LuaValue, f32),
 ) -> mlua::Result<bool> {
     let point_a: Vector2 = lua.from_value(point_a)?;
     let point_b: Vector2 = lua.from_value(point_b)?;
 
-    unsafe { Ok(CheckCollisionCircles(point_a, radius_a, point_b, radius_b)) }
+    unsafe { Ok(CheckCollisionCircles(point_a, range_a, point_b, range_b)) }
 }
 
 /* entry
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_circle_box_2",
-    "info": "TO-DO"
+    "info": "Check if a circle is intersecting against another 2D box.",
+    "member": [
+        { "name": "point_a", "info": "Circle point.", "kind": "vector_2" },
+        { "name": "range_a", "info": "Circle range.", "kind": "number"   },
+        { "name": "box_a",   "info": "2D box.",       "kind": "box_2"    }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_circle_box_2(
     lua: &Lua,
-    (point_a, radius_a, box_a): (LuaValue, f32, LuaValue),
+    (point_a, range_a, box_a): (LuaValue, f32, LuaValue),
 ) -> mlua::Result<bool> {
     let point_a: Vector2 = lua.from_value(point_a)?;
     let box_a: Rectangle = lua.from_value(box_a)?;
 
-    unsafe { Ok(CheckCollisionCircleRec(point_a, radius_a, box_a)) }
+    unsafe { Ok(CheckCollisionCircleRec(point_a, range_a, box_a)) }
 }
 
 /* entry
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_circle_line",
-    "info": "TO-DO"
+    "info": "Check if a circle is intersecting against another line.",
+    "member": [
+        { "name": "point_a", "info": "Circle point.",   "kind": "vector_2" },
+        { "name": "range_a", "info": "Circle range.",   "kind": "number"   },
+        { "name": "line_a",  "info": "Line point (A).", "kind": "vector_2" },
+        { "name": "line_b",  "info": "Line point (B).", "kind": "vector_2" }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_circle_line(
     lua: &Lua,
-    (point_a, radius_a, line_a, line_b): (LuaValue, f32, LuaValue, LuaValue),
+    (point_a, range_a, line_a, line_b): (LuaValue, f32, LuaValue, LuaValue),
 ) -> mlua::Result<bool> {
     let point_a: Vector2 = lua.from_value(point_a)?;
     let line_a: Vector2 = lua.from_value(line_a)?;
     let line_b: Vector2 = lua.from_value(line_b)?;
 
-    unsafe { Ok(CheckCollisionCircleLine(point_a, radius_a, line_a, line_b)) }
+    unsafe { Ok(CheckCollisionCircleLine(point_a, range_a, line_a, line_b)) }
 }
 
 /* entry
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_point_box_2",
-    "info": "TO-DO"
+    "info": "Check if a point is intersecting against another 2D box.",
+    "member": [
+        { "name": "point_a", "info": "Point.",  "kind": "vector_2" },
+        { "name": "box_a",   "info": "2D box.", "kind": "box_2"    }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_point_box_2(lua: &Lua, (point_a, box_a): (LuaValue, LuaValue)) -> mlua::Result<bool> {
@@ -178,38 +218,55 @@ fn get_point_box_2(lua: &Lua, (point_a, box_a): (LuaValue, LuaValue)) -> mlua::R
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_point_circle",
-    "info": "TO-DO"
+    "info": "Check if a point is intersecting against another circle.",
+    "member": [
+        { "name": "point_a", "info": "Point (A).",        "kind": "vector_2" },
+        { "name": "point_b", "info": "Circle point (B).", "kind": "vector_2" },
+        { "name": "range_b", "info": "Circle range (B).", "kind": "number"   }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_point_circle(
     lua: &Lua,
-    (point, point_a, radius_a): (LuaValue, LuaValue, f32),
+    (point_a, point_b, range_b): (LuaValue, LuaValue, f32),
 ) -> mlua::Result<bool> {
-    let point: Vector2 = lua.from_value(point)?;
     let point_a: Vector2 = lua.from_value(point_a)?;
+    let point_b: Vector2 = lua.from_value(point_b)?;
 
-    unsafe { Ok(CheckCollisionPointCircle(point, point_a, radius_a)) }
+    unsafe { Ok(CheckCollisionPointCircle(point_a, point_b, range_b)) }
 }
 
 /* entry
 {
     "version": "1.0.0",
     "name": "alicia.collision.get_point_triangle",
-    "info": "TO-DO"
+    "info": "Check if a point is intersecting against another triangle.",
+    "member": [
+        { "name": "point_a", "info": "Point (A).",          "kind": "vector_2" },
+        { "name": "point_b", "info": "Triangle point (B).", "kind": "vector_2" },
+        { "name": "point_c", "info": "Triangle point (C).", "kind": "vector_2" },
+        { "name": "point_d", "info": "Triangle point (D).", "kind": "vector_2" }
+    ],
+    "result": [
+        { "name": "intersect", "info": "Result of intersection.", "kind": "boolean" }
+    ]
 }
 */
 fn get_point_triangle(
     lua: &Lua,
-    (point, point_a, point_b, point_c): (LuaValue, LuaValue, LuaValue, LuaValue),
+    (point_a, point_b, point_c, point_d): (LuaValue, LuaValue, LuaValue, LuaValue),
 ) -> mlua::Result<bool> {
-    let point: Vector2 = lua.from_value(point)?;
     let point_a: Vector2 = lua.from_value(point_a)?;
     let point_b: Vector2 = lua.from_value(point_b)?;
     let point_c: Vector2 = lua.from_value(point_c)?;
+    let point_d: Vector2 = lua.from_value(point_d)?;
 
     unsafe {
         Ok(CheckCollisionPointTriangle(
-            point, point_a, point_b, point_c,
+            point_a, point_b, point_c, point_d,
         ))
     }
 }
@@ -309,12 +366,12 @@ fn get_box_2_box_2_difference(
 */
 fn get_sphere_sphere(
     lua: &Lua,
-    (point_a, point_b, radius_a, radius_b): (LuaValue, LuaValue, f32, f32),
+    (point_a, point_b, range_a, range_b): (LuaValue, LuaValue, f32, f32),
 ) -> mlua::Result<bool> {
     let point_a: Vector3 = lua.from_value(point_a)?;
     let point_b: Vector3 = lua.from_value(point_b)?;
 
-    unsafe { Ok(CheckCollisionSpheres(point_a, radius_a, point_b, radius_b)) }
+    unsafe { Ok(CheckCollisionSpheres(point_a, range_a, point_b, range_b)) }
 }
 
 /* entry
@@ -340,12 +397,12 @@ fn get_box_3_box_3(lua: &Lua, (box_a, box_b): (LuaValue, LuaValue)) -> mlua::Res
 */
 fn get_box_3_sphere(
     lua: &Lua,
-    (box_a, point_a, radius_a): (LuaValue, LuaValue, f32),
+    (box_a, point_a, range_a): (LuaValue, LuaValue, f32),
 ) -> mlua::Result<bool> {
     let box_a: BoundingBox = lua.from_value(box_a)?;
     let point_a: Vector3 = lua.from_value(point_a)?;
 
-    unsafe { Ok(CheckCollisionBoxSphere(box_a, point_a, radius_a)) }
+    unsafe { Ok(CheckCollisionBoxSphere(box_a, point_a, range_a)) }
 }
 
 /* entry
@@ -357,7 +414,7 @@ fn get_box_3_sphere(
 */
 fn get_ray_sphere(
     lua: &Lua,
-    (ray_a, point_a, radius_a): (LuaValue, LuaValue, f32),
+    (ray_a, point_a, range_a): (LuaValue, LuaValue, f32),
 ) -> mlua::Result<(
     Option<f32>,
     Option<f32>,
@@ -371,7 +428,7 @@ fn get_ray_sphere(
     let point_a: Vector3 = lua.from_value(point_a)?;
 
     unsafe {
-        let value = GetRayCollisionSphere(ray_a, point_a, radius_a);
+        let value = GetRayCollisionSphere(ray_a, point_a, range_a);
 
         if value.hit {
             Ok((

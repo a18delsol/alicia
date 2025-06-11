@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -522,6 +522,14 @@ struct LuaRenderTexture(RenderTexture);
 impl Drop for LuaRenderTexture {
     fn drop(&mut self) {
         unsafe {
+            let render_texture = R3D_GetRenderTarget();
+
+            // currently R3D's active render texture.
+            if render_texture.id == self.0.id {
+                println!("unload R3D render_texture");
+                R3D_SetRenderTarget(std::ptr::null_mut());
+            }
+
             UnloadRenderTexture(self.0);
         }
     }
@@ -537,6 +545,23 @@ impl mlua::UserData for LuaRenderTexture {
     }
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
+        /* entry
+        {
+            "version": "1.0.0",
+            "name": "render_texture:set_R3D",
+            "info": "TO-DO"
+        }
+        */
+        method.add_method_mut("set_R3D", |_: &Lua, this, value: bool| unsafe {
+            if value {
+                R3D_SetRenderTarget(&mut this.0);
+            } else {
+                R3D_SetRenderTarget(std::ptr::null_mut());
+            }
+
+            Ok(())
+        });
+
         /* entry
         {
             "version": "1.0.0",

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2025 a18delsol
+* Copyright (c) 2025 luxreduxdelux
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
@@ -185,7 +185,10 @@ impl Status {
             if info.mouse_pass { SetWindowState(ConfigFlags_FLAG_WINDOW_MOUSE_PASSTHROUGH as u32); }
 
             // initialize R3D library.
-            R3D_Init(info.size.0, info.size.1, 0);
+            R3D_Init(info.size.0, info.size.1, R3D_FLAG_DEPTH_PREPASS | R3D_FLAG_8_BIT_NORMALS);
+
+            // TO-DO bug in R3D with forward renderer.
+            R3D_ApplyRenderMode(1);
 
             // cap frame-rate.
             SetTargetFPS(info.rate as i32);
