@@ -70,7 +70,7 @@ use std::sync::{Arc, Mutex};
 { "version": "1.0.0", "name": "alicia.rapier", "info": "The Rapier API." }
 */
 #[rustfmt::skip]
-pub fn set_global(lua: &Lua, table: &mlua::Table, status_info: &StatusInfo, script_info: Option<&ScriptInfo>) -> mlua::Result<()> {
+pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&ScriptInfo>) -> mlua::Result<()> {
     let rapier = lua.create_table()?;
 
     rapier.set("new", lua.create_function(self::Rapier::new)?)?;

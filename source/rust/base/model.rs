@@ -71,7 +71,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 
     let model_animation = lua.create_table()?;
 
-    model_animation.set("new", lua.create_function(self::ModelAnimation::new)?)?;
+    model_animation.set("new", lua.create_function(self::LuaModelAnimation::new)?)?;
 
     table.set("model_animation", model_animation)?;
 
@@ -137,6 +137,7 @@ impl LuaModel {
         unsafe {
             let data = LoadModel(name.as_ptr());
 
+            // TO-DO extract this out as separate API
             for x in 0..data.materialCount {
                 let mut m = *data.materials.wrapping_add(x as usize);
 
@@ -209,16 +210,19 @@ impl mlua::UserData for LuaModel {
         */
         method.add_method_mut(
             "bind",
-            |_, this, (index, which, texture): (usize, usize, LuaAnyUserData)| {
-                // TO-DO port
-                /*
-                if texture.is::<crate::base::texture::Texture>() {
-                    let texture = texture.borrow::<crate::base::texture::Texture>().unwrap();
+            |_, this, (index, which, texture): (usize, usize, LuaAnyUserData)| unsafe {
+                if texture.is::<crate::base::texture::LuaTexture>() {
+                    let texture = texture
+                        .borrow::<crate::base::texture::LuaTexture>()
+                        .unwrap();
                     let texture = &*texture;
 
-                    this.0.materials_mut()[index].maps_mut()[which].texture = texture.0;
+                    // TO-DO bound checking
+                    let material = *this.0.materials.wrapping_add(index);
+                    let mut map = *material.maps.wrapping_add(which);
+
+                    map.texture = texture.0;
                 }
-                */
 
                 Ok(())
             },
@@ -226,21 +230,25 @@ impl mlua::UserData for LuaModel {
 
         method.add_method_mut(
             "bind_shader",
-            |_, this, (index, shader): (usize, LuaAnyUserData)| {
-                // TO-DO port
-                /*
-                if shader.is::<crate::base::shader::Shader>() {
-                    let shader = shader.borrow::<crate::base::shader::Shader>().unwrap();
+            |_, this, (index, shader): (usize, LuaAnyUserData)| unsafe {
+                if shader.is::<crate::base::shader::LuaShader>() {
+                    let shader = shader.borrow::<crate::base::shader::LuaShader>().unwrap();
                     let shader = &*shader;
 
-                    this.0.materials_mut()[index].shader = *shader.0;
+                    // TO-DO bound checking
+                    let mut material = *this.0.materials.wrapping_add(index);
+
+                    material.shader = shader.0;
                 }
-                */
+
+                // TO-DO throw error
 
                 Ok(())
             },
         );
 
+        // TO-DO port
+        /*
         /* entry
         {
             "version": "1.0.0",
@@ -250,9 +258,7 @@ impl mlua::UserData for LuaModel {
         */
         method.add_method(
             "draw_mesh",
-            |lua, this, (index, point, angle, scale): (usize, LuaValue, LuaValue, LuaValue)| unsafe {
-                // TO-DO port
-                /*
+            |lua, this, (index, point, angle, scale): (usize, LuaValue, LuaValue, LuaValue)| {
                 let mesh = &this.0.meshes()[index];
                 let point: Vector3 = lua.from_value(point)?;
                 let angle: Vector3 = lua.from_value(angle)?;
@@ -265,12 +271,12 @@ impl mlua::UserData for LuaModel {
 
                 let transform =
                     (Matrix::translate(point.x, point.y, point.z) * Matrix::rotate_xyz(angle) * Matrix::scale(scale.x, scale.y, scale.z));
-                */
 
                 //DrawMesh(**mesh, *this.0.materials()[0], transform);
                 Ok(())
             },
         );
+        */
 
         /* entry
         {
@@ -330,6 +336,7 @@ impl mlua::UserData for LuaModel {
             },
         );
 
+        /*
         /* entry
         {
             "version": "1.0.0",
@@ -345,9 +352,8 @@ impl mlua::UserData for LuaModel {
         */
         method.add_method_mut(
             "draw_transform",
-            |lua, this, (point, angle, scale, color): (LuaValue, LuaValue, LuaValue, LuaValue)| unsafe {
+            |lua, this, (point, angle, scale, color): (LuaValue, LuaValue, LuaValue, LuaValue)| {
                 // TO-DO port
-                /*
                 let point: Vector3 = lua.from_value(point)?;
                 let angle: Vector4 = lua.from_value(angle)?;
                 let scale: Vector3 = lua.from_value(scale)?;
@@ -358,11 +364,11 @@ impl mlua::UserData for LuaModel {
                 DrawModel(*this, Vector3::zero(), 1.0, color);
 
                 this.0.transform = Matrix::identity();
-                */
 
                 Ok(())
             },
         );
+        */
 
         /* entry
         {
@@ -437,24 +443,7 @@ impl mlua::UserData for LuaModel {
             lua.to_value(&work)
         });
 
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "model:mesh_triangle_count",
-            "info": "Get the triangle count of a specific mesh in the model.",
-            "member": [
-                { "name": "index", "info": "Index of mesh.", "kind": "number" }
-            ],
-            "result": [
-                { "name": "count", "info": "Triangle count.", "kind": "number" }
-            ]
-        }
-        */
-        method.add_method("mesh_triangle_count", |_, this, index: usize| {
-            //let mesh = &this.0.meshes()[index];
-            //Ok(mesh.triangleCount)
-            Ok(())
-        });
+        // TO-DO additional API code
     }
 }
 
@@ -465,20 +454,21 @@ impl mlua::UserData for LuaModel {
     "info": "An unique handle for a model animation in memory."
 }
 */
+struct LuaModelAnimation(ModelAnimation);
 
-unsafe impl Send for ModelAnimation {}
+unsafe impl Send for LuaModelAnimation {}
 
-impl ModelAnimation {
+impl LuaModelAnimation {
     /* entry
     {
         "version": "1.0.0",
         "name": "alicia.model_animation.new",
-        "info": "Create a new ModelAnimation resource.",
+        "info": "Create a new model animation resource.",
         "member": [
             { "name": "path", "info": "Path to model file.", "kind": "string" }
         ],
         "result": [
-            { "name": "model_animation", "info": "ModelAnimation resource.", "kind": "model_animation" }
+            { "name": "model_animation", "info": "Model animation resource.", "kind": "model_animation" }
         ]
     }
     */
@@ -492,14 +482,14 @@ impl ModelAnimation {
 
             if count == 0 {
                 return Err(mlua::Error::RuntimeError(format!(
-                    "ModelAnimation::new(): Could not load file \"{path}\"."
+                    "LuaModelAnimation::new(): Could not load file \"{path}\"."
                 )));
             }
 
             for x in 0..count {
-                let animation = data.wrapping_add(x.try_into().unwrap());
+                let animation = *data.wrapping_add(x.try_into().unwrap());
 
-                list.push(*animation);
+                list.push(Self(animation));
             }
 
             Ok(list)
@@ -507,56 +497,20 @@ impl ModelAnimation {
     }
 }
 
-impl mlua::UserData for ModelAnimation {
+impl mlua::UserData for LuaModelAnimation {
     fn add_fields<F: mlua::UserDataFields<Self>>(field: &mut F) {
-        field.add_field_method_get("bone_count", |_, this| Ok(this.boneCount));
-        field.add_field_method_get("frame_count", |_, this| Ok(this.frameCount));
-        // TO-DO port
-        //field.add_field_method_get("name", |_, this| {
-        //    //let name = this.0.name.as_ptr();
-        //    //Script::c_to_rust_string(this.0.name)
-        //});
+        field.add_field_method_get("bone_count", |_, this| Ok(this.0.boneCount));
+        field.add_field_method_get("frame_count", |_, this| Ok(this.0.frameCount));
+        field.add_field_method_get("name", |_, this| {
+            // TO-DO check if this does work?
+            let name: Vec<u8> = this.0.name.iter().map(|x| *x as u8).collect();
+            Ok(String::from_utf8(name)
+                .map_err(|e| mlua::Error::runtime(e))
+                .unwrap())
+        });
     }
 
     fn add_methods<M: mlua::UserDataMethods<Self>>(method: &mut M) {
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "model_animation:get_bone_",
-            "info": "TO-DO"
-        }
-        */
-        method.add_method("get_bone_", |_, this, index: usize| {
-            // TO-DO port
-            //let bone = &this.0.bones()[index];
-            //unsafe {
-            //    let name = Script::c_to_rust_string(bone.name)?;
-            //    Ok((name, bone.parent))
-            //}
-            Ok(())
-        });
-
-        /* entry
-        {
-            "version": "1.0.0",
-            "name": "model_animation:get_bone_",
-            "info": "TO-DO"
-        }
-        */
-        method.add_method(
-            "get_bone_transform",
-            |_, this, (frame, index): (usize, usize)| {
-                // TO-DO port
-                //let transform = this.0.frame_poses()[frame][index];
-                //Ok((
-                //    transform.translation.x,
-                //    transform.translation.y,
-                //    transform.translation.z,
-                //))
-                Ok(())
-            },
-        );
-
         /* entry
         {
             "version": "1.0.0",
@@ -570,19 +524,18 @@ impl mlua::UserData for ModelAnimation {
         */
         method.add_method(
             "update",
-            |_, this, (model, frame): (LuaAnyUserData, usize)| {
+            |_, this, (model, frame): (LuaAnyUserData, usize)| unsafe {
                 if model.is::<LuaModel>() {
                     let model = model.borrow::<LuaModel>().unwrap();
-
-                    unsafe {
-                        UpdateModelAnimation(model.0, *this, frame.try_into().unwrap());
-                    }
-                } else {
-                    panic!("not model");
+                    UpdateModelAnimation(model.0, this.0, frame.try_into().unwrap());
                 }
+
+                // TO-DO throw error
 
                 Ok(())
             },
         );
+
+        // TO-DO additional API code
     }
 }

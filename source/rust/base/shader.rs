@@ -48,13 +48,14 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+use crate::base::helper::*;
 use crate::script::*;
 use crate::status::*;
 
 //================================================================
 
-use crate::base::helper::*;
 use mlua::prelude::*;
+use std::ffi::c_void;
 
 //================================================================
 
@@ -76,7 +77,7 @@ pub fn set_global(lua: &Lua, table: &mlua::Table, _: &StatusInfo, _: Option<&Scr
 /* class
 { "version": "1.0.0", "name": "shader", "info": "An unique handle for a shader in memory." }
 */
-struct LuaShader(Shader);
+pub struct LuaShader(pub Shader);
 
 unsafe impl Send for LuaShader {}
 
@@ -211,11 +212,11 @@ impl mlua::UserData for LuaShader {
             ]
         }
         */
-        method.add_method("get_location_name", |_, this, name: String| {
-            // TO-DO port
-            //Ok(this.get_shader_location(&name))
-            todo!();
-            Ok(())
+        method.add_method("get_location_name", |_, this, name: String| unsafe {
+            Ok(GetShaderLocation(
+                this.0,
+                Script::rust_to_c_string(&name)?.as_ptr(),
+            ))
         });
 
         /* entry
@@ -231,12 +232,15 @@ impl mlua::UserData for LuaShader {
             ]
         }
         */
-        method.add_method("get_location_attribute_name", |_, this, name: String| {
-            // TO-DO port
-            //Ok(this.get_shader_location_attribute(&name))
-            todo!();
-            Ok(())
-        });
+        method.add_method(
+            "get_location_attribute_name",
+            |_, this, name: String| unsafe {
+                Ok(GetShaderLocationAttrib(
+                    this.0,
+                    Script::rust_to_c_string(&name)?.as_ptr(),
+                ))
+            },
+        );
 
         /* entry
         {
@@ -251,11 +255,14 @@ impl mlua::UserData for LuaShader {
             ]
         }
         */
-        method.add_method("get_location", |_, this, location: usize| {
-            // TO-DO port
-            //Ok(this.locs()[location])
-            todo!();
-            Ok(())
+        method.add_method("get_location", |_, this, location: usize| unsafe {
+            if location <= 31 {
+                Ok(*this.0.locs.wrapping_add(location))
+            } else {
+                Err(mlua::Error::runtime(
+                    "Shader::get_location(): Invalid location index.",
+                ))
+            }
         });
 
         /* entry
@@ -271,12 +278,15 @@ impl mlua::UserData for LuaShader {
         */
         method.add_method_mut(
             "set_location",
-            |_, this, (location, value): (usize, i32)| {
-                // TO-DO port
-                //this.locs_mut()[location] = value;
-                //Ok(())
-                todo!();
-                Ok(())
+            |_, this, (location, value): (usize, i32)| unsafe {
+                if location <= 31 {
+                    *this.0.locs.wrapping_add(location) = value;
+                    Ok(())
+                } else {
+                    Err(mlua::Error::runtime(
+                        "Shader::set_location(): Invalid location index.",
+                    ))
+                }
             },
         );
 
@@ -295,53 +305,36 @@ impl mlua::UserData for LuaShader {
         method.add_method_mut(
             "set_shader_value",
             |lua, this, (location, kind, value): (i32, i32, LuaValue)| unsafe {
-                // TO-DO port
-                /*
                 match kind {
                     0 => {
-                        let value: i32 = lua.from_value(value)?;
-                        this.set_shader_value(location, value);
+                        let mut value: f32 = lua.from_value(value)?;
+                        let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
+                        SetShaderValue(this.0, location, value_p, kind);
                     }
                     1 => {
-                        let value: f32 = lua.from_value(value)?;
-                        this.set_shader_value(location, value);
+                        let mut value: Vector2 = lua.from_value(value)?;
+                        let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
+                        SetShaderValue(this.0, location, value_p, kind);
                     }
                     2 => {
-                        let value: Vector2 = lua.from_value(value)?;
-                        this.set_shader_value(location, value);
+                        let mut value: Vector3 = lua.from_value(value)?;
+                        let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
+                        SetShaderValue(this.0, location, value_p, kind);
                     }
                     3 => {
-                        let value: Vector3 = lua.from_value(value)?;
-                        this.set_shader_value(location, value);
-                    }
-                    4 => {
-                        let value: Vector4 = lua.from_value(value)?;
-                        this.set_shader_value(location, value);
-                    }
-                    5 => {
-                        let value: Matrix = lua.from_value(value)?;
-                        SetShaderValueMatrix(*this, location, value);
+                        let mut value: Vector4 = lua.from_value(value)?;
+                        let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
+                        SetShaderValue(this.0, location, value_p, kind);
                     }
                     _ => {
-                        if let Some(data) = value.as_userdata() {
-                            if let Ok(data) = data.borrow::<crate::base::texture::Texture>() {
-                                SetShaderValueTexture(*this, location, (*data).0);
-                            } else {
-                                return Err(mlua::Error::RuntimeError(
-                                    "set_shader_value(): Error borrowing texture.".to_string(),
-                                ));
-                            }
-                        } else {
-                            return Err(mlua::Error::RuntimeError(
-                                "set_shader_value(): Value is not a Texture user-data.".to_string(),
-                            ));
-                        }
+                        let mut value: i32 = lua.from_value(value)?;
+                        let value_p: *mut c_void = &mut value as *mut _ as *mut c_void;
+                        SetShaderValue(this.0, location, value_p, kind);
                     }
                 };
 
-                Ok(())
-                */
-                todo!();
+                // TO-DO add every other value type (ivec2, ivec3, etc.)
+
                 Ok(())
             },
         );
